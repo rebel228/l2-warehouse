@@ -12,7 +12,7 @@ export function ItemRow({ item, actions }: ItemRowProps) {
   };
 
   return (
-    <ContextMenuWrapper key={item.id} actions={actions} onOpenChange={handleOpenChange}>
+    <ContextMenuWrapper actions={actions} onOpenChange={handleOpenChange}>
       <div
         className={`${isSelected ? 'bg-muted/90' : ''}`}
         onContextMenu={() => setIsSelected(true)}
