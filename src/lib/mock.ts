@@ -1,4 +1,4 @@
-interface item {
+export interface mockItem {
   id: string;
   name: string;
   grade: grade;
@@ -17,7 +17,7 @@ export const typeIcon: Record<string, string> = {
   accessory: '💍',
 };
 
-export const itemsMocks: item[] = [
+export const itemsMocks: mockItem[] = [
   {
     id: '1',
     name: 'Bow',
