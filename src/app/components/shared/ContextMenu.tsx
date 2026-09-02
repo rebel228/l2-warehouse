@@ -29,6 +29,7 @@ export function ContextMenuWrapper({ children, actions, onOpenChange }: ContextM
               disabled={action.disabled}
               className={variantClasses[action.variant || 'default']}
             >
+              {action.icon && <span className="mr-2">{action.icon}</span>}
               {action.label}
             </ContextMenuItem>
           );
