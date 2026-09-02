@@ -46,6 +46,7 @@ export const items = snakeCase.table(
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     name: varchar({ length: 255 }).notNull(),
     type: varchar({ length: 255 }).notNull(),
+    grade: itemGrade().default('D').notNull(),
     imageUrl: varchar({ length: 500 }),
     status: itemStatus().default('in_bank').notNull(),
     updatedAt: timestamp().defaultNow().notNull(),
