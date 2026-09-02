@@ -13,24 +13,24 @@ const variantClasses: Record<MenuItemVariant, string> = {
   destructive: 'text-destructive focus:bg-destructive/10',
 };
 
-export function ContextMenuWrapper({ children, items }: ContextMenuWrapperProps) {
+export function ContextMenuWrapper({ children, actions }: ContextMenuWrapperProps) {
   return (
     <ContextMenu>
       <ContextMenuTrigger>{children}</ContextMenuTrigger>
 
       <ContextMenuContent>
-        {items.map((item, index) => {
-          if (item.type === 'separator') {
+        {actions.map((action, index) => {
+          if (action.type === 'separator') {
             return <ContextMenuSeparator key={`sep-${index}`} />;
           }
           return (
             <ContextMenuItem
               key={index}
-              onClick={item.onClick}
-              disabled={item.disabled}
-              className={variantClasses[item.variant || 'default']}
+              onClick={action.onClick}
+              disabled={action.disabled}
+              className={variantClasses[action.variant || 'default']}
             >
-              {item.label}
+              {action.label}
             </ContextMenuItem>
           );
         })}

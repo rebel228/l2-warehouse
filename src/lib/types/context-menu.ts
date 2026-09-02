@@ -1,8 +1,14 @@
 import { ReactNode } from 'react';
+import { mockItem } from '../mock';
 
 export type MenuItemVariant = 'default' | 'destructive';
 
-export interface MenuItem {
+export interface ItemRowProps {
+  item: mockItem;
+  actions: MenuAction[];
+}
+
+export interface MenuAction {
   type?: 'item' | 'separator';
   label?: string;
   icon?: ReactNode;
@@ -11,20 +17,7 @@ export interface MenuItem {
   disabled?: boolean;
 }
 
-export interface ContextMenuProps {
-  x: number;
-  y: number;
-  items: MenuItem[];
-  onClose: () => void;
-}
-
-export interface MenuItem {
-  label?: string;
-  onClick?: () => void;
-  disabled?: boolean;
-}
-
 export interface ContextMenuWrapperProps {
   children: React.ReactNode;
-  items: MenuItem[];
+  actions: MenuAction[];
 }

@@ -1,12 +1,12 @@
 'use client';
-import { itemsMocks, typeIcon, mockItem } from '@/lib/mock';
-import { ContextMenuWrapper } from '../shared/ContextMenu';
+import { itemsMocks, mockItem } from '@/lib/mock';
 import { Edit, Trash2, Users, RotateCcw, MoveRight } from 'lucide-react';
-import { MenuItem } from '@/lib/types/context-menu';
+import { MenuAction } from '@/lib/types/context-menu';
+import { ItemRow } from './ItemRow';
 
 const headers = ['Name', 'Grade', 'Type', 'Status', 'Owner', 'Assigned', 'Holder'];
 
-const getItemMenuItems = (item: mockItem): MenuItem[] => [
+const buildMenu = (item: mockItem): MenuAction[] => [
   {
     label: 'Change Owner',
     icon: <Users className="h-4 w-4" />,
@@ -47,20 +47,7 @@ const ItemTable = () => {
         ))}
       </div>
       {itemsMocks.map((item) => (
-        <ContextMenuWrapper key={item.id} items={getItemMenuItems(item)}>
-          <div className="grid grid-cols-[1fr_0.5fr_1fr_1fr_0.7fr_1fr_1fr] gap-0 border-b px-2 py-2 hover:bg-muted/50 cursor-context-menu">
-            <div className="font-medium truncate flex items-center gap-2">
-              <span className="mr-1">{typeIcon[item.type]}</span>
-              {item.name}
-            </div>
-            <div className="text-center font-mono font-semibold">{item.grade}</div>
-            <div className="truncate">{item.type}</div>
-            <div className="truncate">{item.status}</div>
-            <div className="truncate">{item.owner}</div>
-            <div className="truncate">{item.assigned}</div>
-            <div className="truncate">{item.holder}</div>
-          </div>
-        </ContextMenuWrapper>
+        <ItemRow key={item.id} item={item} actions={buildMenu(item)} />
       ))}
     </div>
   );
