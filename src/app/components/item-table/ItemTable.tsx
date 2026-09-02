@@ -3,6 +3,7 @@ import { itemsMocks, mockItem } from '@/lib/mock';
 import { Edit, Trash2, Users, RotateCcw, MoveRight } from 'lucide-react';
 import { MenuAction } from '@/lib/types/context-menu';
 import { ItemRow } from './ItemRow';
+import { ITEM_GRID_COLS } from '@/lib/constants/grid';
 
 const headers = ['Name', 'Grade', 'Type', 'Status', 'Owner', 'Assigned', 'Holder'];
 
@@ -39,7 +40,7 @@ const buildMenu = (item: mockItem): MenuAction[] => [
 const ItemTable = () => {
   return (
     <div className="w-full overflow-x-auto">
-      <div className="grid grid-cols-[1fr_0.5fr_1fr_1fr_0.7fr_1fr_1fr] gap-0 border-b bg-muted/50 px-2 py-2 font-medium">
+      <div className={`grid ${ITEM_GRID_COLS} gap-0 border-b bg-muted/50 px-2 py-2 font-medium`}>
         {headers.map((h) => (
           <div key={h} className="truncate">
             {h}

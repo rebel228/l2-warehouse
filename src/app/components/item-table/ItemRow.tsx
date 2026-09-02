@@ -3,6 +3,7 @@ import { typeIcon } from '@/lib/mock';
 import { ContextMenuWrapper } from '../shared/ContextMenu';
 import { useState } from 'react';
 import { ItemRowProps } from '@/lib/types/context-menu';
+import { ITEM_GRID_COLS } from '@/lib/constants/grid';
 
 export function ItemRow({ item, actions }: ItemRowProps) {
   const [isSelected, setIsSelected] = useState(false);
@@ -18,7 +19,7 @@ export function ItemRow({ item, actions }: ItemRowProps) {
         onContextMenu={() => setIsSelected(true)}
       >
         <div
-          className={`grid grid-cols-[1fr_0.5fr_1fr_1fr_0.7fr_1fr_1fr] gap-0 border-b px-2 py-2 hover:bg-muted/50 cursor-context-menu ${isSelected ? 'bg-muted/90' : ''}`}
+          className={`grid ${ITEM_GRID_COLS} gap-0 border-b px-2 py-2 hover:bg-muted/50 cursor-context-menu ${isSelected ? 'bg-muted/90' : ''}`}
           onContextMenu={() => setIsSelected(true)}
         >
           <div className="font-medium truncate flex items-center gap-2">
