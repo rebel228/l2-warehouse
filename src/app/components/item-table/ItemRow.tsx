@@ -22,7 +22,7 @@ export function ItemRow({ item, actions }: ItemRowProps) {
           onContextMenu={() => setIsSelected(true)}
         >
           <div className="font-medium truncate flex items-center gap-2">
-            <span className="mr-1">{typeIcon[item.type]}</span>
+            <span className="mr-1">{typeIcon[item.type] || '📦'}</span>
             {item.name}
           </div>
           <div className="text-center font-mono font-semibold">{item.grade}</div>
