@@ -48,6 +48,7 @@ export const items = snakeCase.table(
     name: varchar({ length: 255 }).notNull(),
     type: varchar({ length: 255 }).notNull(),
     grade: itemGrade().default('D').notNull(),
+    enchantLevel: integer().default(0).notNull(),
     imageUrl: varchar({ length: 500 }),
     status: itemStatus().default('in_bank').notNull(),
     updatedAt: timestamp().defaultNow().notNull(),
