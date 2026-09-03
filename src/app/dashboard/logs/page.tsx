@@ -1,7 +1,7 @@
-export default function DashboardPage() {
+export default function LogsPage() {
   return (
-    <div>
-      <h1 className="text-2xl font-bold">Logs</h1>
+    <div className="w-full">
+      <h1 className="text-2xl font-bold mb-4">Logs</h1>
     </div>
   );
 }

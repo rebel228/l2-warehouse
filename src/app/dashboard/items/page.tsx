@@ -1,9 +1,9 @@
 import ItemTable from '../../components/item-table/ItemTable';
 
-export default function DashboardPage() {
+export default function ItemsPage() {
   return (
-    <div>
-      <h1 className="text-2xl font-bold">Items</h1>
+    <div className="w-full">
+      <h1 className="text-2xl font-bold mb-4">Items</h1>
       <ItemTable />
     </div>
   );
