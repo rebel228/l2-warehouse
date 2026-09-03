@@ -15,7 +15,6 @@ export type itemVariant = 'assigned_in_place' | 'assigned_missing' | 'held_forei
 
 export interface CharacterItemRowProps {
   item: mockItem;
-  className?: string;
   variant: itemVariant;
 }
 
