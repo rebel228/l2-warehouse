@@ -1,10 +1,12 @@
 import { defineRelations } from 'drizzle-orm';
-import { index, integer, snakeCase, timestamp, varchar } from 'drizzle-orm/pg-core';
-import { userRole, itemStatus } from './enums';
+import { index, integer, pgEnum, snakeCase, timestamp, varchar } from 'drizzle-orm/pg-core';
 
 // ==============================================
 // TABLES (camelCase keys → snake_case columns)
 // ==============================================
+
+export const userRole = pgEnum('userRole', ['member', 'admin', 'superadmin']);
+export const itemStatus = pgEnum('itemStatus', ['in_bank', 'assigned', 'held']);
 
 export const users = snakeCase.table('users', {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
