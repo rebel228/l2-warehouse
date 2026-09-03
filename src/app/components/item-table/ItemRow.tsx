@@ -2,7 +2,7 @@
 import { typeIcon } from '@/lib/mock';
 import { ContextMenuWrapper } from '../shared/ContextMenu';
 import { useState } from 'react';
-import { ItemRowProps } from '@/lib/types/dashnoard';
+import { ItemRowProps } from '@/lib/types/dashboard';
 import { ITEM_GRID_COLS } from '@/lib/constants/grid';
 
 export function ItemRow({ item, actions }: ItemRowProps) {

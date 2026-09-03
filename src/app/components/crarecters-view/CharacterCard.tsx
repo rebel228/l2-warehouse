@@ -1,8 +1,8 @@
 'use client';
 
-import { mockCharacter } from '@/lib/mock';
+import { mockCharacter, mockItem } from '@/lib/mock';
 import { MenuAction } from '@/lib/types/context-menu';
-import { CharacterCardProps } from '@/lib/types/dashnoard';
+import { CharacterCardProps } from '@/lib/types/dashboard';
 import { Edit, Trash2 } from 'lucide-react';
 import {
   Accordion,
@@ -28,12 +28,35 @@ const characterActions = (character: mockCharacter): MenuAction[] => [
   },
 ];
 
+type ItemGroup = {
+  item: mockItem;
+  type: 'assigned_in_place' | 'assigned_missing' | 'held_foreign';
+};
+
+const buildItemList = (character: mockCharacter): ItemGroup[] => {
+  const assigned = character.assignedItems || [];
+  const held = character.holdsItems || [];
+
+  const assignedItems: ItemGroup[] = assigned.map((item) => {
+    const isInPlace = held.some((h) => h.id === item.id);
+    return {
+      item,
+      type: isInPlace ? 'assigned_in_place' : 'assigned_missing',
+    };
+  });
+
+  const heldForeign: ItemGroup[] = held
+    .filter((item) => !assigned.some((a) => a.id === item.id))
+    .map((item) => ({
+      item,
+      type: 'held_foreign',
+    }));
+
+  return [...assignedItems, ...heldForeign];
+};
+
 export default function CharacterCard({ character }: CharacterCardProps) {
-  const allItems = [
-    ...character.ownedItems,
-    ...character.assignedItems,
-    ...character.holdsItems,
-  ].filter((item, index, self) => index === self.findIndex((i) => i.id === item.id));
+  const itemList = buildItemList(character);
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -64,7 +87,9 @@ export default function CharacterCard({ character }: CharacterCardProps) {
                   </span>
                 </div>
               </div>
-              <div className="flex justify-end items-center w-full pt-2 mt-1 border-t border-border/50">
+            </AccordionTrigger>
+            <AccordionContent className="px-1 pb-3 pt-1">
+              <div className="flex justify-end items-center w-full border-b border-border/50">
                 <div className="flex items-center gap-1">
                   <Button
                     variant="ghost"
@@ -86,15 +111,13 @@ export default function CharacterCard({ character }: CharacterCardProps) {
                   </Button>
                 </div>
               </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-2 pb-3 pt-1 border-t">
-              {allItems.length === 0 ? (
+              {itemList.length === 0 ? (
                 <div className="text-sm text-muted-foreground text-center py-2">No items</div>
               ) : (
                 <div className="space-y-1 max-h-60 overflow-y-auto">
-                  {allItems.map((item) => (
-                    <CharacterItemRow key={item.id} item={item} />
-                  ))}
+                  {itemList.map(({ item, type }) => {
+                    return <CharacterItemRow key={item.id} item={item} variant={type} />;
+                  })}
                 </div>
               )}
             </AccordionContent>
