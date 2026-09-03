@@ -7,6 +7,7 @@ import { index, integer, pgEnum, snakeCase, timestamp, varchar } from 'drizzle-o
 
 export const userRole = pgEnum('userRole', ['member', 'admin', 'superadmin']);
 export const itemStatus = pgEnum('itemStatus', ['in_bank', 'assigned', 'held']);
+export const itemGrade = pgEnum('item_grade', ['NG', 'D', 'C', 'B', 'A', 'S']);
 
 export const users = snakeCase.table('users', {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
