@@ -4,6 +4,8 @@ import { Button } from '@/app/components/ui/button';
 import { Plus, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { ItemDialogForm } from '../items/ItemDialogForm';
+import { useState } from 'react';
 
 const navLinks = [
   { label: 'Items', href: '/dashboard/items' },
@@ -12,6 +14,7 @@ const navLinks = [
 ];
 
 const Header = () => {
+  const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
   const pathname = usePathname();
   const handleAddItem = () => {
     console.log('Open Add Item modal');
@@ -52,7 +55,7 @@ const Header = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleAddItem}
+            onClick={() => setIsItemDialogOpen(true)}
             className="flex items-center gap-1.5"
           >
             <Plus className="h-4 w-4" />
@@ -70,6 +73,7 @@ const Header = () => {
           </Button>
         </div>
       </div>
+      <ItemDialogForm open={isItemDialogOpen} onOpenChange={setIsItemDialogOpen} />
     </header>
   );
 };
