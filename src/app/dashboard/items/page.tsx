@@ -1,4 +1,4 @@
-import ItemTable from '../../components/item-table/ItemTable';
+import ItemTable from '../../components/items/ItemTable';
 
 export default function ItemsPage() {
   return (

@@ -1,4 +1,4 @@
-import CharacterCard from '@/app/components/crarecters-view/CharacterCard';
+import CharacterCard from '@/app/components/characters/CharacterCard';
 import { charactersMocks } from '@/lib/mock';
 
 export default function CharactersPage() {
