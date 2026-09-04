@@ -15,6 +15,15 @@ import { useActionState, useState } from 'react';
 import { CharacterFormDialogProps } from '@/lib/types/DialogWindow';
 import { addCharacter, State } from '@/app/actions/characters';
 import { getUsers } from '@/app/actions/users';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
+import { CHARACTER_CLASSES } from '@/lib/constants/charecterClasses';
 
 export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogProps) {
   const initialState: State = { message: null, errors: {} };
@@ -67,7 +76,7 @@ export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogP
                   id="character-error"
                   aria-live="polite"
                   aria-atomic="true"
-                  className="min-h-[2rem]"
+                  className="min-h-[1.5rem]"
                 >
                   {state.errors?.name &&
                     state.errors.name.map((error: string) => (
@@ -81,12 +90,25 @@ export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogP
             <Field>
               <Label htmlFor="class">Class</Label>
               <div className="flex flex-col">
-                <Input id="class" name="class" aria-describedby="class-error" />
+                <Select name="class" aria-describedby="class-error">
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {CHARACTER_CLASSES.map((cls) => (
+                        <SelectItem key={cls} value={cls}>
+                          {cls}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
                 <div
                   id="class-error"
                   aria-live="polite"
                   aria-atomic="true"
-                  className="min-h-[2rem]"
+                  className="min-h-[1.5rem]"
                 >
                   {state.errors?.class &&
                     state.errors.class.map((error: string) => (
@@ -100,25 +122,27 @@ export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogP
             <Field>
               <Label htmlFor="owner">Owner</Label>
               <div className="flex flex-col">
-                <Input
-                  id="owner"
-                  aria-describedby="owner-error"
-                  value={searchTerm}
-                  onChange={handleSearchChange}
-                />
-                {userList.length > 0 && (
-                  <div className="border rounded-md max-h-40 overflow-y-auto">
-                    {userList.map((user) => (
-                      <div
-                        key={user.id}
-                        className="px-2 py-1 hover:bg-muted cursor-pointer text-sm"
-                        onClick={() => handleUserSelect(user)}
-                      >
-                        {user.username} ({user.email})
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="relative">
+                  <Input
+                    id="owner"
+                    aria-describedby="owner-error"
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                  />
+                  {userList.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 rounded-md border border-border bg-popover text-popover-foreground shadow-md overflow-hidden">
+                      {userList.map((user) => (
+                        <div
+                          key={user.id}
+                          className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-muted hover:text-muted-foreground"
+                          onClick={() => handleUserSelect(user)}
+                        >
+                          {user.username} ({user.email})
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div
                   id="owner-error"
                   aria-live="polite"
