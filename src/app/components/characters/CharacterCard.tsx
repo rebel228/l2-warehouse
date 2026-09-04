@@ -1,7 +1,5 @@
 'use client';
 
-import { mockCharacter } from '@/lib/mock';
-import { MenuAction } from '@/lib/types/context-menu';
 import { CharacterCardProps } from '@/lib/types/dashboard';
 import { Edit, Trash2 } from 'lucide-react';
 import {
@@ -10,9 +8,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/app/components/ui/accordion';
-import CharacterItemRow from './CharacterItemRow';
 import { Button } from '../ui/button';
 import { buildItemList } from '@/lib/helpers/character-helpers';
+import CharacterItemRow from './CharacterItemRow';
 
 export default function CharacterCard({ character }: CharacterCardProps) {
   const itemList = buildItemList(character);
@@ -30,18 +28,18 @@ export default function CharacterCard({ character }: CharacterCardProps) {
   return (
     <div className="w-80 flex-shrink-0">
       <Accordion className="w-full bg-card border shadow-sm hover:shadow-md transition-shadow">
-        <AccordionItem value={character.characterName} className="border-0">
+        <AccordionItem value={character.id} className="border-0">
           <AccordionTrigger className="flex flex-col w-full px-2 py-2 gap-1 hover:bg-muted/30 rounded-t-lg hover:no-underline [&[data-state=open]]:text-foreground">
             <div className="flex justify-between items-start w-full">
               <div className="flex flex-col items-start text-left">
                 <span className="font-semibold text-base">
-                  {character.characterName}{' '}
+                  {character.name}{' '}
                   <span className="font-normal text-muted-foreground text-sm">
                     ({character.class})
                   </span>
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Owner: {character.user} · Clan: {character.clan}
+                  Owner:{character.user.username}
                 </span>
               </div>
             </div>

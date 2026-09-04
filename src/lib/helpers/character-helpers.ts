@@ -1,11 +1,16 @@
-import { mockCharacter } from '../mock';
-import { ItemGroup } from '../types/dashboard';
+import { CharacterWithRelations } from '@/app/actions/characters';
+import { ItemType, itemVariant } from '../types/dashboard';
 
-export const buildItemList = (character: mockCharacter): ItemGroup[] => {
-  const assigned = character.assignedItems || [];
-  const held = character.holdsItems || [];
+export type ItemGroup = {
+  item: ItemType;
+  type: itemVariant;
+};
 
-  const assignedItems: ItemGroup[] = assigned.map((item) => {
+export const buildItemList = (character: CharacterWithRelations): ItemGroup[] => {
+  const assigned = character.assignedItems ?? [];
+  const held = character.heldItems ?? [];
+
+  const assignedGroups: ItemGroup[] = assigned.map((item) => {
     const isInPlace = held.some((h) => h.id === item.id);
     return {
       item,
@@ -13,12 +18,12 @@ export const buildItemList = (character: mockCharacter): ItemGroup[] => {
     };
   });
 
-  const heldForeign: ItemGroup[] = held
+  const heldForeignGroups: ItemGroup[] = held
     .filter((item) => !assigned.some((a) => a.id === item.id))
     .map((item) => ({
       item,
       type: 'held_foreign',
     }));
 
-  return [...assignedItems, ...heldForeign];
+  return [...assignedGroups, ...heldForeignGroups];
 };

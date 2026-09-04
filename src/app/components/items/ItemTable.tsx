@@ -5,6 +5,7 @@ import { ItemRow } from './ItemRow';
 import { ITEM_GRID_COLS } from '@/lib/constants/grid';
 import { useItems } from '@/lib/hooks/useItems';
 import { ItemWithRelations } from '@/app/actions/items';
+import { ItemTableProps } from '@/lib/types/dashboard';
 
 const headers = ['Name', 'Grade', 'Type', 'Status', 'Owner', 'Assigned', 'Holder'];
 
@@ -38,8 +39,8 @@ const buildMenu = (item: ItemWithRelations): MenuAction[] => [
   },
 ];
 
-export default function ItemTable() {
-  const { data: items, isLoading, error } = useItems();
+export default function ItemTable({ initialItems }: ItemTableProps) {
+  const { data: items, isLoading, error } = useItems(initialItems);
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error loading items</div>;
   return (

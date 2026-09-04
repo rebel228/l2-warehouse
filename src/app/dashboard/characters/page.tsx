@@ -1,15 +1,7 @@
-import CharacterCard from '@/app/components/characters/CharacterCard';
-import { charactersMocks } from '@/lib/mock';
+import { getCharacters } from '@/app/actions/characters';
+import CharactersTable from '@/app/components/characters/CharacterTable';
 
-export default function CharactersPage() {
-  return (
-    <div className="w-full">
-      <h1 className="text-2xl font-bold mb-4">Characters</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {charactersMocks.map((char) => (
-          <CharacterCard key={char.id} character={char} />
-        ))}
-      </div>
-    </div>
-  );
+export default async function CharactersPage() {
+  const initialData = await getCharacters();
+  return <CharactersTable initialData={initialData} />;
 }

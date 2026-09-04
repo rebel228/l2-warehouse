@@ -5,6 +5,8 @@ import { characters } from '@/lib/db/schema';
 import { addCharacterSchema } from '@/lib/validations/character.schema';
 import { revalidatePath } from 'next/cache';
 
+export type CharacterWithRelations = Awaited<ReturnType<typeof getCharacters>>[number];
+
 export type State = {
   errors?: {
     name?: string[];
@@ -51,4 +53,42 @@ export async function addCharacter(formData: FormData): Promise<State> {
       success: false,
     };
   }
+}
+
+export async function getCharacters() {
+  const result = await db.query.characters.findMany({
+    with: {
+      user: {
+        columns: {
+          id: true,
+          username: true,
+          email: true,
+        },
+      },
+      assignedItems: {
+        columns: {
+          id: true,
+          name: true,
+          type: true,
+          grade: true,
+          enchantLevel: true,
+          status: true,
+          // можно добавить и другие поля, если нужны
+        },
+      },
+      heldItems: {
+        columns: {
+          id: true,
+          name: true,
+          type: true,
+          grade: true,
+          enchantLevel: true,
+          status: true,
+        },
+      },
+    },
+    orderBy: (characters, { asc }) => asc(characters.name),
+  });
+
+  return result;
 }
