@@ -1,13 +1,14 @@
 'use client';
-import { itemsMocks, mockItem } from '@/lib/mock';
 import { Edit, Trash2, Users, RotateCcw, MoveRight } from 'lucide-react';
 import { MenuAction } from '@/lib/types/context-menu';
 import { ItemRow } from './ItemRow';
 import { ITEM_GRID_COLS } from '@/lib/constants/grid';
+import { useItems } from '@/lib/hooks/useItems';
+import { ItemWithRelations } from '@/app/actions/items';
 
 const headers = ['Name', 'Grade', 'Type', 'Status', 'Owner', 'Assigned', 'Holder'];
 
-const buildMenu = (item: mockItem): MenuAction[] => [
+const buildMenu = (item: ItemWithRelations): MenuAction[] => [
   {
     label: 'Change Owner',
     icon: <Users className="h-4 w-4" />,
@@ -37,7 +38,10 @@ const buildMenu = (item: mockItem): MenuAction[] => [
   },
 ];
 
-const ItemTable = () => {
+export default function ItemTable() {
+  const { data: items, isLoading, error } = useItems();
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error loading items</div>;
   return (
     <div className="w-full overflow-x-auto">
       <div className={`grid ${ITEM_GRID_COLS} gap-0 border-b bg-muted/50 px-2 py-2 font-medium`}>
@@ -47,11 +51,9 @@ const ItemTable = () => {
           </div>
         ))}
       </div>
-      {itemsMocks.map((item) => (
+      {items?.map((item) => (
         <ItemRow key={item.id} item={item} actions={buildMenu(item)} />
       ))}
     </div>
   );
-};
-
-export default ItemTable;
+}

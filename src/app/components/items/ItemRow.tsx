@@ -29,9 +29,9 @@ export function ItemRow({ item, actions }: ItemRowProps) {
           <div className="text-center font-mono font-semibold">{item.grade}</div>
           <div className="truncate">{item.type}</div>
           <div className="truncate">{item.status}</div>
-          <div className="truncate">{item.owner}</div>
-          <div className="truncate">{item.assigned}</div>
-          <div className="truncate">{item.holder}</div>
+          <div className="truncate">{item.ownerUser?.username}</div>
+          <div className="truncate">{item.assignedChar?.name}</div>
+          <div className="truncate">{item.holderChar?.name}</div>
         </div>
       </div>
     </ContextMenuWrapper>

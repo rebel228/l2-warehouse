@@ -1,8 +1,9 @@
+import { ItemWithRelations } from '@/app/actions/items';
 import { mockCharacter, mockItem } from '../mock';
 import { MenuAction } from './context-menu';
 
 export interface ItemRowProps {
-  item: mockItem;
+  item: ItemWithRelations;
   actions: MenuAction[];
 }
 

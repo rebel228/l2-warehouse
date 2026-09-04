@@ -18,6 +18,8 @@ export type State = {
   success?: boolean;
 };
 
+export type ItemWithRelations = Awaited<ReturnType<typeof getItems>>[number];
+
 export async function addItem(formData: FormData) {
   console.log('📦 formData entries:', Array.from(formData.entries()));
   const validatedFields = addItemSchema.safeParse({
@@ -71,4 +73,35 @@ export async function addItem(formData: FormData) {
       success: false,
     };
   }
+}
+
+export async function getItems() {
+  const result = await db.query.items.findMany({
+    with: {
+      ownerUser: {
+        columns: {
+          id: true,
+          username: true,
+          email: true,
+        },
+      },
+      assignedChar: {
+        columns: {
+          id: true,
+          name: true,
+          class: true,
+        },
+      },
+      holderChar: {
+        columns: {
+          id: true,
+          name: true,
+          class: true,
+        },
+      },
+    },
+    orderBy: { id: 'desc' },
+  });
+
+  return result;
 }
