@@ -25,16 +25,30 @@ import { ItemDialogFormProps } from '@/lib/types/DialogWindow';
 import { useDebouncedCallback } from 'use-debounce';
 import { getUsers } from '@/app/actions/users';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { getCharacters } from '@/app/actions/characters';
 
 export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
   const grades = GRADES.map((value) => ({ value, label: value }));
   const itemTypes = ITEM_TYPES.map((value) => ({ value, label: value }));
+  const queryClient = useQueryClient();
+  const [fieldErrors, setFieldErrors] = useState<State['errors']>({});
+
   const [searchTerm, setSearchTerm] = useState('');
   const [userList, setUserList] = useState<{ id: number; username: string; email: string }[]>([]);
   const [selectedOwnerId, setSelectedOwnerId] = useState<string>('');
-  const [fieldErrors, setFieldErrors] = useState<State['errors']>({});
   const [ownerError, setOwnerError] = useState<string>('');
-  const queryClient = useQueryClient();
+
+  const [assignedSearchTerm, setAssignedSearchTerm] = useState('');
+  const [assignedList, setAssignedList] = useState<{ id: number; name: string; class: string }[]>(
+    []
+  );
+  const [selectedAssignedId, setSelectedAssignedId] = useState<string>('');
+  const [AssignedError, setAssignedError] = useState<string>('');
+
+  const [holderSearchTerm, setHolderSearchTerm] = useState('');
+  const [holderList, setHolderList] = useState<{ id: number; name: string; class: string }[]>([]);
+  const [selectedHolderId, setSelectedHolderId] = useState<string>('');
+  const [HolderError, setHolderError] = useState<string>('');
 
   const mutation = useMutation({
     mutationFn: (formData: FormData) => addItem(formData),
@@ -45,11 +59,22 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
       }
       queryClient.invalidateQueries({ queryKey: ['items'] });
       onOpenChange(false);
+      setFieldErrors({});
+
       setSearchTerm('');
       setSelectedOwnerId('');
       setUserList([]);
       setOwnerError('');
-      setFieldErrors({});
+
+      setAssignedSearchTerm('');
+      setSelectedAssignedId('');
+      setAssignedList([]);
+      setAssignedError('');
+
+      setHolderSearchTerm('');
+      setSelectedHolderId('');
+      setHolderList([]);
+      setHolderError('');
     },
     onError: (error) => {
       console.error('Mutation error:', error);
@@ -89,6 +114,52 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
     setUserList([]);
   };
 
+  const handleAssignedSearch = useDebouncedCallback(async (value: string) => {
+    if (value.length >= 1) {
+      const result = await getCharacters(value);
+      setAssignedList(result);
+    } else {
+      setAssignedList([]);
+    }
+  }, 300);
+
+  const handleAssignedSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setAssignedSearchTerm(value);
+    setSelectedAssignedId('');
+    handleAssignedSearch(value);
+  };
+
+  const handleAssignedSelect = (character: { id: number; name: string }) => {
+    handleAssignedSearch.cancel();
+    setAssignedSearchTerm(character.name);
+    setSelectedAssignedId(String(character.id));
+    setAssignedList([]);
+  };
+
+  const handleHolderSearch = useDebouncedCallback(async (value: string) => {
+    if (value.length >= 1) {
+      const result = await getCharacters(value);
+      setHolderList(result);
+    } else {
+      setHolderList([]);
+    }
+  }, 300);
+
+  const handleHolderSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setHolderSearchTerm(value);
+    setSelectedHolderId('');
+    handleHolderSearch(value);
+  };
+
+  const handleHolderSelect = (character: { id: number; name: string }) => {
+    handleHolderSearch.cancel();
+    setHolderSearchTerm(character.name);
+    setSelectedHolderId(String(character.id));
+    setHolderList([]);
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -97,10 +168,26 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
       return;
     }
 
+    if (assignedSearchTerm.trim().length > 0 && !selectedAssignedId) {
+      setAssignedError('Not a valid character');
+      return;
+    }
+
+    if (holderSearchTerm.trim().length > 0 && !selectedHolderId) {
+      setHolderError('Not a valid character');
+      return;
+    }
+
     const formData = new FormData(e.currentTarget);
 
     if (selectedOwnerId) {
       formData.append('ownerUserId', selectedOwnerId);
+    }
+    if (selectedAssignedId) {
+      formData.append('assignedId', selectedAssignedId);
+    }
+    if (selectedHolderId) {
+      formData.append('holderId', selectedHolderId);
     }
     mutation.mutate(formData);
   };
@@ -255,6 +342,86 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
                   {ownerError && <p className="mt-0.5 text-sm text-red-500">{ownerError}</p>}
                   {!ownerError &&
                     fieldErrors?.ownerUserId?.map((error: string) => (
+                      <p className="mt-0.5 text-sm text-red-500" key={error}>
+                        {error}
+                      </p>
+                    ))}
+                </div>
+              </div>
+            </Field>
+            <Field>
+              <Label htmlFor="assigned">Assign to</Label>
+              <div className="flex flex-col">
+                <div className="relative">
+                  <Input
+                    id="assigned"
+                    aria-describedby="assigned-error"
+                    value={assignedSearchTerm}
+                    onChange={handleAssignedSearchChange}
+                  />
+                  {assignedList.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 rounded-md border border-border bg-popover text-popover-foreground shadow-md overflow-hidden">
+                      {assignedList.map((character) => (
+                        <div
+                          key={character.id}
+                          className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-muted hover:text-muted-foreground"
+                          onClick={() => handleAssignedSelect(character)}
+                        >
+                          {character.name} ({character.class})
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div
+                  id="assigned-error"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  className="min-h-[2rem]"
+                >
+                  {AssignedError && <p className="mt-0.5 text-sm text-red-500">{AssignedError}</p>}
+                  {!AssignedError &&
+                    fieldErrors?.assignedId?.map((error: string) => (
+                      <p className="mt-0.5 text-sm text-red-500" key={error}>
+                        {error}
+                      </p>
+                    ))}
+                </div>
+              </div>
+            </Field>
+            <Field>
+              <Label htmlFor="holder">Give to</Label>
+              <div className="flex flex-col">
+                <div className="relative">
+                  <Input
+                    id="holder"
+                    aria-describedby="holder-error"
+                    value={holderSearchTerm}
+                    onChange={handleHolderSearchChange}
+                  />
+                  {holderList.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 rounded-md border border-border bg-popover text-popover-foreground shadow-md overflow-hidden">
+                      {holderList.map((character) => (
+                        <div
+                          key={character.id}
+                          className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-muted hover:text-muted-foreground"
+                          onClick={() => handleHolderSelect(character)}
+                        >
+                          {character.name} ({character.class})
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div
+                  id="holder-error"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  className="min-h-[2rem]"
+                >
+                  {HolderError && <p className="mt-0.5 text-sm text-red-500">{HolderError}</p>}
+                  {!HolderError &&
+                    fieldErrors?.holderId?.map((error: string) => (
                       <p className="mt-0.5 text-sm text-red-500" key={error}>
                         {error}
                       </p>
