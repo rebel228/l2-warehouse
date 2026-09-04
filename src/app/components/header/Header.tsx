@@ -5,6 +5,7 @@ import { Plus, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ItemDialogForm } from '../items/ItemDialogForm';
+import { CharacterDialogForm } from '../characters/CharacterDialogForm';
 import { useState } from 'react';
 
 const navLinks = [
@@ -15,14 +16,8 @@ const navLinks = [
 
 const Header = () => {
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
+  const [isCharacterDialogOpen, setIsCharacterDialogOpen] = useState(false);
   const pathname = usePathname();
-  const handleAddItem = () => {
-    console.log('Open Add Item modal');
-  };
-
-  const handleAddCharacter = () => {
-    console.log('Open Add Character modal');
-  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -65,7 +60,7 @@ const Header = () => {
           <Button
             variant="default"
             size="sm"
-            onClick={handleAddCharacter}
+            onClick={() => setIsCharacterDialogOpen(true)}
             className="flex items-center gap-1.5"
           >
             <UserPlus className="h-4 w-4" />
@@ -74,6 +69,7 @@ const Header = () => {
         </div>
       </div>
       <ItemDialogForm open={isItemDialogOpen} onOpenChange={setIsItemDialogOpen} />
+      <CharacterDialogForm open={isCharacterDialogOpen} onOpenChange={setIsCharacterDialogOpen} />
     </header>
   );
 };
