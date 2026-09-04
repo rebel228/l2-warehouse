@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { db } from '../../lib/db';
 import { addItemSchema } from '../../lib/validations/item.schema';
 import { items } from '../../lib/db/schema';
+import { success } from 'zod';
+import { fa } from 'zod/v4/locales';
 
 export type State = {
   errors?: {
@@ -13,6 +15,7 @@ export type State = {
     enchant?: string[];
   };
   message?: string | null;
+  success?: boolean;
 };
 
 export async function addItem(prevstate: State, formData: FormData) {
@@ -28,6 +31,7 @@ export async function addItem(prevstate: State, formData: FormData) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
       message: 'Failed to Add an Item.',
+      success: false,
     };
   }
   const { name, grade, type, enchant } = validatedFields.data;
@@ -45,12 +49,13 @@ export async function addItem(prevstate: State, formData: FormData) {
       .returning();
     console.log('✅ Inserted item:', result);
     revalidatePath('/dashboard/items');
-    return { errors: {}, message: 'Item added successfully' };
+    return { errors: {}, message: 'Item added successfully', success: true };
   } catch (error) {
     console.error('❌ Database error:', error);
     return {
       errors: {},
       message: 'Database error: failed to add item',
+      success: false,
     };
   }
 }

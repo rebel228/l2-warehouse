@@ -12,6 +12,7 @@ export type State = {
     userId?: string[];
   };
   message?: string | null;
+  success?: boolean;
 };
 
 export async function addCharacter(prevstate: State, formData: FormData): Promise<State> {
@@ -41,12 +42,13 @@ export async function addCharacter(prevstate: State, formData: FormData): Promis
       .returning();
     console.log('✅ Inserted character:', result);
     revalidatePath('/dashboard/characters');
-    return { errors: {}, message: 'Character added successfully' };
+    return { errors: {}, message: 'Character added successfully', success: true };
   } catch (error) {
     console.error('❌ Database error:', error);
     return {
       errors: {},
       message: 'Database error: failed to add character',
+      success: false,
     };
   }
 }

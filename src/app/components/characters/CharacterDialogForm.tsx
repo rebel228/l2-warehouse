@@ -11,7 +11,7 @@ import { Field, FieldGroup } from '@/app/components/ui/field';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
 import { useDebouncedCallback } from 'use-debounce';
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { CharacterFormDialogProps } from '@/lib/types/DialogWindow';
 import { addCharacter, State } from '@/app/actions/characters';
 import { getUsers } from '@/app/actions/users';
@@ -31,6 +31,12 @@ export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogP
   const [searchTerm, setSearchTerm] = useState('');
   const [userList, setUserList] = useState<{ id: number; username: string; email: string }[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
+
+  useEffect(() => {
+    if (state.success) {
+      onOpenChange(false);
+    }
+  }, [state.success, onOpenChange]);
 
   const handleSearch = useDebouncedCallback(async (value: string) => {
     if (value.length >= 1) {

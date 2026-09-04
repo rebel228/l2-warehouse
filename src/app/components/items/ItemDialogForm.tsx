@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '../ui/select';
 import { addItem, State } from '@/app/actions/items';
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
 import { ItemDialogFormProps } from '@/lib/types/DialogWindow';
 
 export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
@@ -28,6 +28,13 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
   const itemTypes = ITEM_TYPES.map((value) => ({ value, label: value }));
   const initialState: State = { message: null, errors: {} };
   const [state, formAction] = useActionState(addItem, initialState);
+
+  useEffect(() => {
+    if (state.success) {
+      onOpenChange(false);
+    }
+  }, [state.success, onOpenChange]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm">
