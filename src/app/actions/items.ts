@@ -18,7 +18,7 @@ export type State = {
   success?: boolean;
 };
 
-export async function addItem(prevstate: State, formData: FormData) {
+export async function addItem(formData: FormData) {
   console.log('📦 formData entries:', Array.from(formData.entries()));
   const validatedFields = addItemSchema.safeParse({
     name: formData.get('name'),

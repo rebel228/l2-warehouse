@@ -15,7 +15,7 @@ export type State = {
   success?: boolean;
 };
 
-export async function addCharacter(prevstate: State, formData: FormData): Promise<State> {
+export async function addCharacter(formData: FormData): Promise<State> {
   console.log(' formData entries:', Array.from(formData.entries()));
   const validatedFields = addCharacterSchema.safeParse({
     name: formData.get('name'),

@@ -11,7 +11,7 @@ import { Field, FieldGroup } from '@/app/components/ui/field';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
 import { useDebouncedCallback } from 'use-debounce';
-import { useActionState, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { CharacterFormDialogProps } from '@/lib/types/DialogWindow';
 import { addCharacter, State } from '@/app/actions/characters';
 import { getUsers } from '@/app/actions/users';
@@ -24,19 +24,35 @@ import {
   SelectValue,
 } from '../ui/select';
 import { CHARACTER_CLASSES } from '@/lib/constants/charecterClasses';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogProps) {
-  const initialState: State = { message: null, errors: {}, success: false };
-  const [state, formAction] = useActionState(addCharacter, initialState);
-  const [searchTerm, setSearchTerm] = useState('');
   const [userList, setUserList] = useState<{ id: number; username: string; email: string }[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [fieldErrors, setFieldErrors] = useState<State['errors']>({});
+  const [ownerError, setOwnerError] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedOwnerId, setSelectedOwnerId] = useState<string>('');
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (state.success) {
+  const mutation = useMutation({
+    mutationFn: (formData: FormData) => addCharacter(formData),
+    onSuccess: (data) => {
+      if (!data.success) {
+        setFieldErrors(data.errors || {});
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: ['characters'] });
       onOpenChange(false);
-    }
-  }, [state.success, onOpenChange]);
+      setSearchTerm('');
+      setSelectedOwnerId('');
+      setUserList([]);
+      setOwnerError('');
+      setFieldErrors({});
+    },
+    onError: (error) => {
+      console.error('Mutation error:', error);
+    },
+  });
 
   const handleSearch = useDebouncedCallback(async (value: string) => {
     if (value.length >= 1) {
@@ -50,14 +66,31 @@ export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogP
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
+    setSelectedOwnerId('');
     handleSearch(value);
   };
 
   const handleUserSelect = (user: { id: number; username: string }) => {
     handleSearch.cancel();
     setSearchTerm(user.username);
-    setSelectedUserId(String(user.id));
+    setSelectedOwnerId(String(user.id));
     setUserList([]);
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (searchTerm.trim().length > 0 && !selectedOwnerId) {
+      setOwnerError('Not a valid user');
+      return;
+    }
+
+    const formData = new FormData(e.currentTarget);
+
+    if (selectedOwnerId) {
+      formData.append('userId', selectedOwnerId);
+    }
+    mutation.mutate(formData);
   };
 
   return (
@@ -66,13 +99,7 @@ export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogP
         <DialogHeader>
           <DialogTitle>Add New Character</DialogTitle>
         </DialogHeader>
-        <form
-          action={(formData) => {
-            formData.append('userId', selectedUserId);
-            formAction(formData);
-          }}
-          className="flex flex-col"
-        >
+        <form onSubmit={handleSubmit} className="flex flex-col">
           <FieldGroup className="gap-2">
             <Field>
               <Label htmlFor="name">Character Name</Label>
@@ -84,12 +111,11 @@ export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogP
                   aria-atomic="true"
                   className="min-h-[1.5rem]"
                 >
-                  {state.errors?.name &&
-                    state.errors.name.map((error: string) => (
-                      <p className="mt-0.5 text-sm text-red-500" key={error}>
-                        {error}
-                      </p>
-                    ))}
+                  {fieldErrors?.name?.map((error: string) => (
+                    <p className="mt-0.5 text-sm text-red-500" key={error}>
+                      {error}
+                    </p>
+                  ))}
                 </div>
               </div>
             </Field>
@@ -116,12 +142,11 @@ export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogP
                   aria-atomic="true"
                   className="min-h-[1.5rem]"
                 >
-                  {state.errors?.class &&
-                    state.errors.class.map((error: string) => (
-                      <p className="mt-0.5 text-sm text-red-500" key={error}>
-                        {error}
-                      </p>
-                    ))}
+                  {fieldErrors?.class?.map((error: string) => (
+                    <p className="mt-0.5 text-sm text-red-500" key={error}>
+                      {error}
+                    </p>
+                  ))}
                 </div>
               </div>
             </Field>
@@ -155,8 +180,9 @@ export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogP
                   aria-atomic="true"
                   className="min-h-[2rem]"
                 >
-                  {state.errors?.userId &&
-                    state.errors.userId.map((error: string) => (
+                  {ownerError && <p className="mt-0.5 text-sm text-red-500">{ownerError}</p>}
+                  {!ownerError &&
+                    fieldErrors?.userId?.map((error: string) => (
                       <p className="mt-0.5 text-sm text-red-500" key={error}>
                         {error}
                       </p>
@@ -168,7 +194,9 @@ export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogP
 
           <DialogFooter className="mt-4 pt-4 border-t">
             <DialogClose render={<Button variant="outline">Cancel</Button>} />
-            <Button type="submit">Create Character</Button>
+            <Button type="submit" disabled={mutation.isPending}>
+              {mutation.isPending ? 'Creating...' : 'Create Character'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

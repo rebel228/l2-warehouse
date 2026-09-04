@@ -20,19 +20,51 @@ import {
   SelectValue,
 } from '../ui/select';
 import { addItem, State } from '@/app/actions/items';
-import { useActionState, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ItemDialogFormProps } from '@/lib/types/DialogWindow';
 import { useDebouncedCallback } from 'use-debounce';
 import { getUsers } from '@/app/actions/users';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
   const grades = GRADES.map((value) => ({ value, label: value }));
   const itemTypes = ITEM_TYPES.map((value) => ({ value, label: value }));
-  const initialState: State = { message: null, errors: {}, success: false };
-  const [state, formAction] = useActionState(addItem, initialState);
   const [searchTerm, setSearchTerm] = useState('');
   const [userList, setUserList] = useState<{ id: number; username: string; email: string }[]>([]);
   const [selectedOwnerId, setSelectedOwnerId] = useState<string>('');
+  const [fieldErrors, setFieldErrors] = useState<State['errors']>({});
+  const [ownerError, setOwnerError] = useState<string>('');
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: (formData: FormData) => addItem(formData),
+    onSuccess: (data) => {
+      if (!data.success) {
+        setFieldErrors(data.errors || {});
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      onOpenChange(false);
+      setSearchTerm('');
+      setSelectedOwnerId('');
+      setUserList([]);
+      setOwnerError('');
+      setFieldErrors({});
+    },
+    onError: (error) => {
+      console.error('Mutation error:', error);
+    },
+  });
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      setSearchTerm('');
+      setSelectedOwnerId('');
+      setUserList([]);
+      setFieldErrors({});
+    }
+    onOpenChange(newOpen);
+  };
 
   const handleSearch = useDebouncedCallback(async (value: string) => {
     if (value.length >= 1) {
@@ -45,6 +77,7 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    setSelectedOwnerId('');
     setSearchTerm(value);
     handleSearch(value);
   };
@@ -56,27 +89,29 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
     setUserList([]);
   };
 
-  useEffect(() => {
-    if (state.success) {
-      onOpenChange(false);
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (searchTerm.trim().length > 0 && !selectedOwnerId) {
+      setOwnerError('Not a valid user');
+      return;
     }
-  }, [state.success, onOpenChange]);
+
+    const formData = new FormData(e.currentTarget);
+
+    if (selectedOwnerId) {
+      formData.append('ownerUserId', selectedOwnerId);
+    }
+    mutation.mutate(formData);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Add New Item</DialogTitle>
         </DialogHeader>
-        <form
-          action={(formData) => {
-            if (selectedOwnerId) {
-              formData.append('ownerUserId', selectedOwnerId);
-            }
-            formAction(formData);
-          }}
-          className="flex flex-col"
-        >
+        <form onSubmit={handleSubmit} className="flex flex-col">
           <FieldGroup className="gap-2">
             <Field>
               <Label htmlFor="name">Name</Label>
@@ -93,8 +128,8 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
                   aria-atomic="true"
                   className="min-h-[2rem]"
                 >
-                  {state.errors?.name &&
-                    state.errors.name.map((error: string) => (
+                  {fieldErrors?.name &&
+                    fieldErrors.name.map((error: string) => (
                       <p className="mt-0.5 text-sm text-red-500" key={error}>
                         {error}
                       </p>
@@ -127,8 +162,8 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
                   aria-atomic="true"
                   className="min-h-[2rem]"
                 >
-                  {state.errors?.grade &&
-                    state.errors.grade.map((error: string) => (
+                  {fieldErrors?.grade &&
+                    fieldErrors.grade.map((error: string) => (
                       <p className="mt-0.5 text-sm text-red-500" key={error}>
                         {error}
                       </p>
@@ -154,8 +189,8 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
                   </Select>
                 </Field>
                 <div id="type-error" aria-live="polite" aria-atomic="true" className="min-h-[2rem]">
-                  {state.errors?.type &&
-                    state.errors.type.map((error: string) => (
+                  {fieldErrors?.type &&
+                    fieldErrors.type.map((error: string) => (
                       <p className="mt-0.5 text-sm text-red-500" key={error}>
                         {error}
                       </p>
@@ -178,8 +213,8 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
                   aria-atomic="true"
                   className="min-h-[2rem]"
                 >
-                  {state.errors?.enchant &&
-                    state.errors.enchant.map((error: string) => (
+                  {fieldErrors?.enchant &&
+                    fieldErrors.enchant.map((error: string) => (
                       <p className="mt-0.5 text-sm text-red-500" key={error}>
                         {error}
                       </p>
@@ -217,8 +252,9 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
                   aria-atomic="true"
                   className="min-h-[2rem]"
                 >
-                  {state.errors?.ownerUserId &&
-                    state.errors.ownerUserId.map((error: string) => (
+                  {ownerError && <p className="mt-0.5 text-sm text-red-500">{ownerError}</p>}
+                  {!ownerError &&
+                    fieldErrors?.ownerUserId?.map((error: string) => (
                       <p className="mt-0.5 text-sm text-red-500" key={error}>
                         {error}
                       </p>
@@ -230,7 +266,9 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
 
           <DialogFooter className="mt-4 pt-4 border-t">
             <DialogClose render={<Button variant="outline">Cancel</Button>} />
-            <Button type="submit">Add Item</Button>
+            <Button type="submit" disabled={mutation.isPending}>
+              {mutation.isPending ? 'Adding...' : 'Add Item'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
