@@ -20,14 +20,41 @@ import {
   SelectValue,
 } from '../ui/select';
 import { addItem, State } from '@/app/actions/items';
-import { useActionState, useEffect } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { ItemDialogFormProps } from '@/lib/types/DialogWindow';
+import { useDebouncedCallback } from 'use-debounce';
+import { getUsers } from '@/app/actions/users';
 
 export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
   const grades = GRADES.map((value) => ({ value, label: value }));
   const itemTypes = ITEM_TYPES.map((value) => ({ value, label: value }));
-  const initialState: State = { message: null, errors: {} };
+  const initialState: State = { message: null, errors: {}, success: false };
   const [state, formAction] = useActionState(addItem, initialState);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [userList, setUserList] = useState<{ id: number; username: string; email: string }[]>([]);
+  const [selectedOwnerId, setSelectedOwnerId] = useState<string>('');
+
+  const handleSearch = useDebouncedCallback(async (value: string) => {
+    if (value.length >= 1) {
+      const result = await getUsers(value);
+      setUserList(result);
+    } else {
+      setUserList([]);
+    }
+  }, 300);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    handleSearch(value);
+  };
+
+  const handleUserSelect = (user: { id: number; username: string }) => {
+    handleSearch.cancel();
+    setSearchTerm(user.username);
+    setSelectedOwnerId(String(user.id));
+    setUserList([]);
+  };
 
   useEffect(() => {
     if (state.success) {
@@ -41,7 +68,15 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
         <DialogHeader>
           <DialogTitle>Add New Item</DialogTitle>
         </DialogHeader>
-        <form action={formAction} className="flex flex-col">
+        <form
+          action={(formData) => {
+            if (selectedOwnerId) {
+              formData.append('ownerUserId', selectedOwnerId);
+            }
+            formAction(formData);
+          }}
+          className="flex flex-col"
+        >
           <FieldGroup className="gap-2">
             <Field>
               <Label htmlFor="name">Name</Label>
@@ -152,6 +187,45 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
                 </div>
               </div>
             </div>
+            <Field>
+              <Label htmlFor="owner">Owner</Label>
+              <div className="flex flex-col">
+                <div className="relative">
+                  <Input
+                    id="owner"
+                    aria-describedby="owner-error"
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                  />
+                  {userList.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 rounded-md border border-border bg-popover text-popover-foreground shadow-md overflow-hidden">
+                      {userList.map((user) => (
+                        <div
+                          key={user.id}
+                          className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-muted hover:text-muted-foreground"
+                          onClick={() => handleUserSelect(user)}
+                        >
+                          {user.username} ({user.email})
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div
+                  id="owner-error"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  className="min-h-[2rem]"
+                >
+                  {state.errors?.ownerUserId &&
+                    state.errors.ownerUserId.map((error: string) => (
+                      <p className="mt-0.5 text-sm text-red-500" key={error}>
+                        {error}
+                      </p>
+                    ))}
+                </div>
+              </div>
+            </Field>
           </FieldGroup>
 
           <DialogFooter className="mt-4 pt-4 border-t">

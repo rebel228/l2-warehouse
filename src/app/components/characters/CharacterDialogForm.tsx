@@ -26,7 +26,7 @@ import {
 import { CHARACTER_CLASSES } from '@/lib/constants/charecterClasses';
 
 export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogProps) {
-  const initialState: State = { message: null, errors: {} };
+  const initialState: State = { message: null, errors: {}, success: false };
   const [state, formAction] = useActionState(addCharacter, initialState);
   const [searchTerm, setSearchTerm] = useState('');
   const [userList, setUserList] = useState<{ id: number; username: string; email: string }[]>([]);
