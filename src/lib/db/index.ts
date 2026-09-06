@@ -7,6 +7,10 @@ if (process.env.NODE_ENV === 'development') {
   config({ path: '.env.local' });
 }
 
+console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
+console.log('🔍 POSTGRES_URL exists:', !!process.env.POSTGRES_URL);
+console.log('🔍 DATABASE_URL exists:', !!process.env.DATABASE_URL);
+
 const databaseUrl = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
 
 if (!databaseUrl) {
