@@ -61,33 +61,33 @@ export async function addItem(formData: FormData) {
         success: false,
       };
     }
-    if (assignedId) {
-      const charExists = await db
-        .select()
-        .from(characters)
-        .where(eq(characters.id, assignedId))
-        .limit(1);
-      if (!charExists.length) {
-        return {
-          errors: { assignedId: ['Character does not exist'] },
-          message: 'Invalid character',
-          success: false,
-        };
-      }
+  }
+  if (assignedId) {
+    const charExists = await db
+      .select()
+      .from(characters)
+      .where(eq(characters.id, assignedId))
+      .limit(1);
+    if (!charExists.length) {
+      return {
+        errors: { assignedId: ['Character does not exist'] },
+        message: 'Invalid character',
+        success: false,
+      };
     }
-    if (holderId) {
-      const charExists = await db
-        .select()
-        .from(characters)
-        .where(eq(characters.id, holderId))
-        .limit(1);
-      if (!charExists.length) {
-        return {
-          errors: { holderId: ['Character does not exist'] },
-          message: 'Invalid character',
-          success: false,
-        };
-      }
+  }
+  if (holderId) {
+    const charExists = await db
+      .select()
+      .from(characters)
+      .where(eq(characters.id, holderId))
+      .limit(1);
+    if (!charExists.length) {
+      return {
+        errors: { holderId: ['Character does not exist'] },
+        message: 'Invalid character',
+        success: false,
+      };
     }
   }
 
