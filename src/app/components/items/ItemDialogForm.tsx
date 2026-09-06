@@ -25,7 +25,7 @@ import { ItemDialogFormProps } from '@/lib/types/DialogWindow';
 import { useDebouncedCallback } from 'use-debounce';
 import { getUsers } from '@/app/actions/users';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { getCharacters } from '@/app/actions/characters';
+import { searchCharacters } from '@/app/actions/characters';
 
 export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
   const grades = GRADES.map((value) => ({ value, label: value }));
@@ -116,7 +116,7 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
 
   const handleAssignedSearch = useDebouncedCallback(async (value: string) => {
     if (value.length >= 1) {
-      const result = await getCharacters(value);
+      const result = await searchCharacters(value);
       setAssignedList(result);
     } else {
       setAssignedList([]);
@@ -139,7 +139,7 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
 
   const handleHolderSearch = useDebouncedCallback(async (value: string) => {
     if (value.length >= 1) {
-      const result = await getCharacters(value);
+      const result = await searchCharacters(value);
       setHolderList(result);
     } else {
       setHolderList([]);

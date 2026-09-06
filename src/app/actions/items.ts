@@ -5,7 +5,7 @@ import { db } from '../../lib/db';
 import { addItemSchema } from '../../lib/validations/item.schema';
 import { characters, items, users } from '../../lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { getItemStatus } from '@/lib/helpers/getItemStatus';
+import { getItemStatus } from '@/lib/helpers/item-helpers';
 
 export type State = {
   errors?: {
@@ -150,4 +150,9 @@ export async function getItems() {
   });
 
   return result;
+}
+
+export async function deleteItem(id: number) {
+  await db.delete(items).where(eq(items.id, id));
+  revalidatePath('/dashboard/items');
 }
