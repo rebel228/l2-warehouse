@@ -1,5 +1,4 @@
 import { ItemWithRelations } from '@/app/actions/items';
-import { mockCharacter, mockItem } from '../mock';
 import { MenuAction } from './context-menu';
 import { CharacterWithRelations, getCharacters } from '@/app/actions/characters';
 
@@ -36,4 +35,10 @@ export type CharacterItem = NonNullable<
 export type ItemGroup = {
   item: ItemWithRelations;
   type: 'assigned_in_place' | 'assigned_missing' | 'held_foreign';
+};
+
+export const typeIcon: Record<string, string> = {
+  Weapon: '⚔️',
+  Armor: '🛡️',
+  Accessory: '💍',
 };

@@ -74,7 +74,6 @@ export async function getCharacters() {
           grade: true,
           enchantLevel: true,
           status: true,
-          // можно добавить и другие поля, если нужны
         },
       },
       heldItems: {

@@ -44,17 +44,20 @@ export default function ItemTable({ initialItems }: ItemTableProps) {
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error loading items</div>;
   return (
-    <div className="w-full overflow-x-auto">
-      <div className={`grid ${ITEM_GRID_COLS} gap-0 border-b bg-muted/50 px-2 py-2 font-medium`}>
-        {headers.map((h) => (
-          <div key={h} className="truncate">
-            {h}
-          </div>
+    <div className="w-full">
+      <h1 className="text-2xl font-bold mb-4">Items</h1>
+      <div className="w-full overflow-x-auto">
+        <div className={`grid ${ITEM_GRID_COLS} gap-0 border-b bg-muted/50 px-2 py-2 font-medium`}>
+          {headers.map((h) => (
+            <div key={h} className="truncate">
+              {h}
+            </div>
+          ))}
+        </div>
+        {items?.map((item) => (
+          <ItemRow key={item.id} item={item} actions={buildMenu(item)} />
         ))}
       </div>
-      {items?.map((item) => (
-        <ItemRow key={item.id} item={item} actions={buildMenu(item)} />
-      ))}
     </div>
   );
 }
