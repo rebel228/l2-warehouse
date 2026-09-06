@@ -27,12 +27,13 @@ import { CHARACTER_CLASSES } from '@/lib/constants/charecterClasses';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogProps) {
-  const [userList, setUserList] = useState<{ id: number; username: string; email: string }[]>([]);
   const [fieldErrors, setFieldErrors] = useState<State['errors']>({});
-  const [ownerError, setOwnerError] = useState<string>('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedOwnerId, setSelectedOwnerId] = useState<string>('');
   const queryClient = useQueryClient();
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [userList, setUserList] = useState<{ id: number; username: string; email: string }[]>([]);
+  const [selectedOwnerId, setSelectedOwnerId] = useState<string>('');
+  const [ownerError, setOwnerError] = useState<string>('');
 
   const mutation = useMutation({
     mutationFn: (formData: FormData) => addCharacter(formData),
@@ -43,6 +44,7 @@ export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogP
       }
       queryClient.invalidateQueries({ queryKey: ['characters'] });
       onOpenChange(false);
+
       setSearchTerm('');
       setSelectedOwnerId('');
       setUserList([]);

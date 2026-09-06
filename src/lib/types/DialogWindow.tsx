@@ -1,6 +1,9 @@
+import { ItemWithRelations } from '@/app/actions/items';
+
 export interface ItemDialogFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  itemToEdit?: ItemWithRelations | null;
 }
 
 export interface CharacterFormDialogProps {

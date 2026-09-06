@@ -1,60 +1,85 @@
 'use client';
-import { Edit, Trash2, Users, RotateCcw, MoveRight } from 'lucide-react';
-import { MenuAction } from '@/lib/types/context-menu';
 import { ItemRow } from './ItemRow';
 import { ITEM_GRID_COLS } from '@/lib/constants/grid';
-import { useItems } from '@/lib/hooks/useItems';
-import { ItemWithRelations } from '@/app/actions/items';
+import { buildMenu } from '@/lib/helpers/item-helpers';
+import { useDeleteItem, useItems } from '@/lib/hooks/useItems';
 import { ItemTableProps } from '@/lib/types/dashboard';
+import { useState } from 'react';
+import { ConfirmDialog } from '../shared/AlertDialog';
+import { ItemWithRelations } from '@/app/actions/items';
+import { ItemDialogForm } from './ItemDialogForm';
 
 const headers = ['Name', 'Grade', 'Type', 'Status', 'Owner', 'Assigned', 'Holder'];
 
-const buildMenu = (item: ItemWithRelations): MenuAction[] => [
-  {
-    label: 'Change Owner',
-    icon: <Users className="h-4 w-4" />,
-    onClick: () => console.log('change owner', item),
-  },
-  {
-    label: 'Reassign',
-    icon: <RotateCcw className="h-4 w-4" />,
-    onClick: () => console.log('reassign', item),
-  },
-  {
-    label: 'Transfer',
-    icon: <MoveRight className="h-4 w-4" />,
-    onClick: () => console.log('transfer', item),
-  },
-  { type: 'separator' },
-  {
-    label: 'Edit',
-    icon: <Edit className="h-4 w-4" />,
-    onClick: () => console.log('edit', item),
-  },
-  {
-    label: 'Delete',
-    icon: <Trash2 className="h-4 w-4" />,
-    onClick: () => console.log('delete', item),
-    variant: 'destructive',
-  },
-];
-
 export default function ItemTable({ initialItems }: ItemTableProps) {
   const { data: items, isLoading, error } = useItems(initialItems);
+  const deleteMutation = useDeleteItem();
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<number | null>(null);
+  const [editingItem, setEditingItem] = useState<ItemWithRelations | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  const handleEditDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      setEditingItem(null);
+    }
+    setIsEditDialogOpen(open);
+  };
+
+  const handleEdit = (item: ItemWithRelations) => {
+    setEditingItem(item);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDelete = (id: number) => {
+    setItemToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (itemToDelete !== null) {
+      deleteMutation.mutate(itemToDelete, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setItemToDelete(null);
+        },
+      });
+    }
+  };
+
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error loading items</div>;
   return (
-    <div className="w-full overflow-x-auto">
-      <div className={`grid ${ITEM_GRID_COLS} gap-0 border-b bg-muted/50 px-2 py-2 font-medium`}>
-        {headers.map((h) => (
-          <div key={h} className="truncate">
-            {h}
-          </div>
+    <div className="w-full">
+      <h1 className="text-2xl font-bold mb-4">Items</h1>
+      <div className="w-full overflow-x-auto">
+        <div className={`grid ${ITEM_GRID_COLS} gap-0 border-b bg-muted/50 px-2 py-2 font-medium`}>
+          {headers.map((h) => (
+            <div key={h} className="truncate">
+              {h}
+            </div>
+          ))}
+        </div>
+        {items?.map((item) => (
+          <ItemRow key={item.id} item={item} actions={buildMenu(item, handleDelete, handleEdit)} />
         ))}
       </div>
-      {items?.map((item) => (
-        <ItemRow key={item.id} item={item} actions={buildMenu(item)} />
-      ))}
+      <ItemDialogForm
+        key={editingItem?.id ?? 'new'}
+        open={isEditDialogOpen}
+        onOpenChange={handleEditDialogOpenChange}
+        itemToEdit={editingItem}
+      />
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        title="Delete Item"
+        description={`Are you sure you want to delete "${itemToDelete}"? This action cannot be undone.`}
+        isPending={deleteMutation.isPending}
+        pendingText="Deleting..."
+      />
     </div>
   );
 }
