@@ -1,11 +1,10 @@
-import { mockItem } from '@/lib/mock';
 import { useState } from 'react';
 import { ContextMenuWrapper } from '../shared/ContextMenu';
 import { MenuAction } from '@/lib/types/context-menu';
 import { Users, RotateCcw, MoveRight, Edit, Trash2 } from 'lucide-react';
-import { CharacterItemRowProps, itemVariant } from '@/lib/types/dashboard';
+import { CharacterItemRowProps, ItemType, itemVariant } from '@/lib/types/dashboard';
 
-const itemActions = (item: mockItem): MenuAction[] => [
+const itemActions = (item: ItemType): MenuAction[] => [
   {
     label: 'Change Owner',
     icon: <Users className="h-4 w-4" />,

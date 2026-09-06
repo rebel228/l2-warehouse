@@ -1,7 +1,5 @@
 'use client';
 
-import { mockCharacter } from '@/lib/mock';
-import { MenuAction } from '@/lib/types/context-menu';
 import { CharacterCardProps } from '@/lib/types/dashboard';
 import { Edit, Trash2 } from 'lucide-react';
 import {
@@ -10,38 +8,57 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/app/components/ui/accordion';
-import CharacterItemRow from './CharacterItemRow';
 import { Button } from '../ui/button';
-import { buildItemList } from '@/lib/helpers/character-helpers';
+import { buildItemList, getDeleteDescription } from '@/lib/helpers/character-helpers';
+import CharacterItemRow from './CharacterItemRow';
+import { useDeleteCharacter } from '@/lib/hooks/useCharacters';
+import { useState } from 'react';
+import { CharacterWithRelations } from '@/app/actions/characters';
+import { ConfirmDialog } from '../shared/AlertDialog';
 
 export default function CharacterCard({ character }: CharacterCardProps) {
   const itemList = buildItemList(character);
+  const deleteMutation = useDeleteCharacter();
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [characterToDelete, setCharacterToDelete] = useState<CharacterWithRelations | null>(null);
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
     console.log('edit', character);
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    console.log('delete', character);
+  const handleDeleteClick = (char: CharacterWithRelations) => {
+    setCharacterToDelete(char);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (characterToDelete) {
+      deleteMutation.mutate(characterToDelete.id, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setCharacterToDelete(null);
+        },
+      });
+    }
   };
 
   return (
     <div className="w-80 flex-shrink-0">
       <Accordion className="w-full bg-card border shadow-sm hover:shadow-md transition-shadow">
-        <AccordionItem value={character.characterName} className="border-0">
+        <AccordionItem value={character.id} className="border-0">
           <AccordionTrigger className="flex flex-col w-full px-2 py-2 gap-1 hover:bg-muted/30 rounded-t-lg hover:no-underline [&[data-state=open]]:text-foreground">
             <div className="flex justify-between items-start w-full">
               <div className="flex flex-col items-start text-left">
                 <span className="font-semibold text-base">
-                  {character.characterName}{' '}
+                  {character.name}{' '}
                   <span className="font-normal text-muted-foreground text-sm">
                     ({character.class})
                   </span>
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Owner: {character.user} · Clan: {character.clan}
+                  Owner:{character.user.username}
                 </span>
               </div>
             </div>
@@ -62,7 +79,7 @@ export default function CharacterCard({ character }: CharacterCardProps) {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 rounded-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={handleDelete}
+                  onClick={() => handleDeleteClick(character)}
                 >
                   <Trash2 className="h-4 w-4" />
                   <span className="sr-only">Delete</span>
@@ -81,6 +98,15 @@ export default function CharacterCard({ character }: CharacterCardProps) {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        title="Delete Character"
+        description={getDeleteDescription(character)}
+        isPending={deleteMutation.isPending}
+        pendingText="Deleting..."
+      />
     </div>
   );
 }
