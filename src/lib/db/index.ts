@@ -1,17 +1,6 @@
 import { drizzle } from 'drizzle-orm/neon-http';
 import { neon } from '@neondatabase/serverless';
-import { config } from 'dotenv';
 import { relations } from './schema';
-
-config({ path: '.env' });
-
-if (process.env.NODE_ENV === 'development') {
-  config({ path: '.env.local' });
-}
-
-console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
-console.log('🔍 POSTGRES_URL exists:', !!process.env.POSTGRES_URL);
-console.log('🔍 DATABASE_URL exists:', !!process.env.DATABASE_URL);
 
 const databaseUrl = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
 
