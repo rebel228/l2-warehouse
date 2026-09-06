@@ -1,0 +1,18 @@
+import { ReactNode } from 'react';
+
+export type MenuItemVariant = 'default' | 'destructive';
+
+export interface MenuAction {
+  type?: 'item' | 'separator';
+  label?: string;
+  icon?: ReactNode;
+  onClick?: () => void;
+  variant?: 'default' | 'destructive';
+  disabled?: boolean;
+}
+
+export interface ContextMenuWrapperProps {
+  children: React.ReactNode;
+  actions: MenuAction[];
+  onOpenChange?: (open: boolean) => void;
+}
