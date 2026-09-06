@@ -3,7 +3,9 @@ import { neon } from '@neondatabase/serverless';
 import { config } from 'dotenv';
 import { relations } from './schema';
 
-config({ path: '.env.local' });
+if (process.env.NODE_ENV === 'development') {
+  config({ path: '.env.local' });
+}
 
 const databaseUrl = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
 
