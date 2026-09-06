@@ -1,9 +1,9 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { characters, users } from '@/lib/db/schema';
+import { characters, items, users } from '@/lib/db/schema';
 import { addCharacterSchema } from '@/lib/validations/character.schema';
-import { eq, ilike } from 'drizzle-orm';
+import { eq, ilike, or } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 export type CharacterWithRelations = Awaited<ReturnType<typeof getCharacters>>[number];
@@ -115,6 +115,26 @@ export async function searchCharacters(search: string = '') {
 }
 
 export async function deleteCharacter(id: number) {
-  await db.delete(characters).where(eq(characters.id, id));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(items)
+      .set({
+        assignedId: null,
+        status: 'in_bank',
+      })
+      .where(eq(items.assignedId, id));
+
+    await tx
+      .update(items)
+      .set({
+        holderId: null,
+        status: 'in_bank',
+      })
+      .where(eq(items.holderId, id));
+
+    await tx.delete(characters).where(eq(characters.id, id));
+  });
+
   revalidatePath('/dashboard/characters');
+  revalidatePath('/dashboard/items');
 }

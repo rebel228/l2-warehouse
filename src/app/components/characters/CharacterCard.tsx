@@ -9,7 +9,7 @@ import {
   AccordionTrigger,
 } from '@/app/components/ui/accordion';
 import { Button } from '../ui/button';
-import { buildItemList } from '@/lib/helpers/character-helpers';
+import { buildItemList, getDeleteDescription } from '@/lib/helpers/character-helpers';
 import CharacterItemRow from './CharacterItemRow';
 import { useDeleteCharacter } from '@/lib/hooks/useCharacters';
 import { useState } from 'react';
@@ -43,11 +43,6 @@ export default function CharacterCard({ character }: CharacterCardProps) {
       });
     }
   };
-
-  // const handleDelete = (e: React.MouseEvent) => {
-  //   e.stopPropagation();
-  //   handleDeleteClick(character);
-  // };
 
   return (
     <div className="w-80 flex-shrink-0">
@@ -108,7 +103,7 @@ export default function CharacterCard({ character }: CharacterCardProps) {
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleConfirmDelete}
         title="Delete Character"
-        description={`Are you sure you want to delete "${characterToDelete?.name}"? This action cannot be undone.`}
+        description={getDeleteDescription(character)}
         isPending={deleteMutation.isPending}
         pendingText="Deleting..."
       />
