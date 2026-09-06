@@ -3,10 +3,5 @@ import ItemTable from '../components/items/ItemTable';
 
 export default function DashboardPage() {
   redirect('/dashboard/items');
-  return (
-    <div>
-      <h1 className="text-2xl font-bold">Dashboard</h1>
-      <ItemTable />
-    </div>
-  );
+  return <></>;
 }
