@@ -113,3 +113,8 @@ export async function searchCharacters(search: string = '') {
 
   return result;
 }
+
+export async function deleteCharacter(id: number) {
+  await db.delete(characters).where(eq(characters.id, id));
+  revalidatePath('/dashboard/characters');
+}

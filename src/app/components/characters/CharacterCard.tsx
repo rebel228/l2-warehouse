@@ -11,19 +11,43 @@ import {
 import { Button } from '../ui/button';
 import { buildItemList } from '@/lib/helpers/character-helpers';
 import CharacterItemRow from './CharacterItemRow';
+import { useDeleteCharacter } from '@/lib/hooks/useCharacters';
+import { useState } from 'react';
+import { CharacterWithRelations } from '@/app/actions/characters';
+import { ConfirmDialog } from '../shared/AlertDialog';
 
 export default function CharacterCard({ character }: CharacterCardProps) {
   const itemList = buildItemList(character);
+  const deleteMutation = useDeleteCharacter();
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [characterToDelete, setCharacterToDelete] = useState<CharacterWithRelations | null>(null);
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
     console.log('edit', character);
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    console.log('delete', character);
+  const handleDeleteClick = (char: CharacterWithRelations) => {
+    setCharacterToDelete(char);
+    setDeleteDialogOpen(true);
   };
+
+  const handleConfirmDelete = () => {
+    if (characterToDelete) {
+      deleteMutation.mutate(characterToDelete.id, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setCharacterToDelete(null);
+        },
+      });
+    }
+  };
+
+  // const handleDelete = (e: React.MouseEvent) => {
+  //   e.stopPropagation();
+  //   handleDeleteClick(character);
+  // };
 
   return (
     <div className="w-80 flex-shrink-0">
@@ -60,7 +84,7 @@ export default function CharacterCard({ character }: CharacterCardProps) {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 rounded-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={handleDelete}
+                  onClick={() => handleDeleteClick(character)}
                 >
                   <Trash2 className="h-4 w-4" />
                   <span className="sr-only">Delete</span>
@@ -79,6 +103,15 @@ export default function CharacterCard({ character }: CharacterCardProps) {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        title="Delete Character"
+        description={`Are you sure you want to delete "${characterToDelete?.name}"? This action cannot be undone.`}
+        isPending={deleteMutation.isPending}
+        pendingText="Deleting..."
+      />
     </div>
   );
 }
