@@ -3,6 +3,8 @@ import { neon } from '@neondatabase/serverless';
 import { config } from 'dotenv';
 import { relations } from './schema';
 
+config({ path: '.env' });
+
 if (process.env.NODE_ENV === 'development') {
   config({ path: '.env.local' });
 }
