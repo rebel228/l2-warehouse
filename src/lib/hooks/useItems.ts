@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { deleteItem, getItems, ItemWithRelations } from '@/app/actions/items';
+import { deleteItem, getItems, ItemWithRelations, updateItem } from '@/app/actions/items';
 
 export function useItems(initialData?: ItemWithRelations[]) {
   return useQuery({
@@ -16,6 +16,18 @@ export function useDeleteItem() {
     mutationFn: deleteItem,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
+    },
+  });
+}
+
+export function useUpdateItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, formData }: { id: number; formData: FormData }) => updateItem(id, formData),
+    onSuccess: (data) => {
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ['items'] });
+      }
     },
   });
 }

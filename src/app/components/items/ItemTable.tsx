@@ -6,6 +6,8 @@ import { useDeleteItem, useItems } from '@/lib/hooks/useItems';
 import { ItemTableProps } from '@/lib/types/dashboard';
 import { useState } from 'react';
 import { ConfirmDialog } from '../shared/AlertDialog';
+import { ItemWithRelations } from '@/app/actions/items';
+import { ItemDialogForm } from './ItemDialogForm';
 
 const headers = ['Name', 'Grade', 'Type', 'Status', 'Owner', 'Assigned', 'Holder'];
 
@@ -15,8 +17,22 @@ export default function ItemTable({ initialItems }: ItemTableProps) {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
+  const [editingItem, setEditingItem] = useState<ItemWithRelations | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const handleDeleteClick = (id: number) => {
+  const handleEditDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      setEditingItem(null);
+    }
+    setIsEditDialogOpen(open);
+  };
+
+  const handleEdit = (item: ItemWithRelations) => {
+    setEditingItem(item);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDelete = (id: number) => {
     setItemToDelete(id);
     setDeleteDialogOpen(true);
   };
@@ -46,9 +62,15 @@ export default function ItemTable({ initialItems }: ItemTableProps) {
           ))}
         </div>
         {items?.map((item) => (
-          <ItemRow key={item.id} item={item} actions={buildMenu(item, handleDeleteClick)} />
+          <ItemRow key={item.id} item={item} actions={buildMenu(item, handleDelete, handleEdit)} />
         ))}
       </div>
+      <ItemDialogForm
+        key={editingItem?.id ?? 'new'}
+        open={isEditDialogOpen}
+        onOpenChange={handleEditDialogOpenChange}
+        itemToEdit={editingItem}
+      />
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}

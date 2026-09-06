@@ -20,7 +20,8 @@ export function getItemStatus(
 
 export const buildMenu = (
   item: ItemWithRelations,
-  onDelete: (id: number) => void
+  onDelete: (id: number) => void,
+  onEdit: (item: ItemWithRelations) => void
 ): MenuAction[] => [
   {
     label: 'Change Owner',
@@ -41,7 +42,7 @@ export const buildMenu = (
   {
     label: 'Edit',
     icon: <Edit className="h-4 w-4" />,
-    onClick: () => console.log('edit', item),
+    onClick: () => onEdit(item),
   },
   {
     label: 'Delete',

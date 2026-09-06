@@ -156,3 +156,87 @@ export async function deleteItem(id: number) {
   await db.delete(items).where(eq(items.id, id));
   revalidatePath('/dashboard/items');
 }
+
+export async function updateItem(id: number, formData: FormData) {
+  const validatedFields = addItemSchema.safeParse({
+    name: formData.get('name'),
+    grade: formData.get('grade'),
+    type: formData.get('type'),
+    enchant: formData.get('enchant'),
+    ownerUserId: formData.get('ownerUserId') ? Number(formData.get('ownerUserId')) : null,
+    assignedId: formData.get('assignedId') ? Number(formData.get('assignedId')) : null,
+    holderId: formData.get('holderId') ? Number(formData.get('holderId')) : null,
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      success: false,
+    };
+  }
+
+  const { name, grade, type, enchant, ownerUserId, assignedId, holderId } = validatedFields.data;
+
+  if (ownerUserId) {
+    const userExists = await db.select().from(users).where(eq(users.id, ownerUserId)).limit(1);
+    if (!userExists.length) {
+      return {
+        errors: { ownerUserId: ['User does not exist'] },
+        success: false,
+      };
+    }
+  }
+
+  if (assignedId) {
+    const charExists = await db
+      .select()
+      .from(characters)
+      .where(eq(characters.id, assignedId))
+      .limit(1);
+    if (!charExists.length) {
+      return {
+        errors: { assignedId: ['Character does not exist'] },
+        success: false,
+      };
+    }
+  }
+
+  if (holderId) {
+    const charExists = await db
+      .select()
+      .from(characters)
+      .where(eq(characters.id, holderId))
+      .limit(1);
+    if (!charExists.length) {
+      return {
+        errors: { holderId: ['Character does not exist'] },
+        success: false,
+      };
+    }
+  }
+
+  const status = getItemStatus(assignedId, holderId);
+
+  try {
+    await db
+      .update(items)
+      .set({
+        name,
+        grade,
+        type,
+        enchantLevel: enchant,
+        ownerUserId,
+        assignedId,
+        holderId,
+        status,
+        updatedAt: new Date(),
+      })
+      .where(eq(items.id, id));
+
+    revalidatePath('/dashboard/items');
+    return { success: true };
+  } catch (error) {
+    console.error('Update error:', error);
+    return { success: false, message: 'Database error' };
+  }
+}

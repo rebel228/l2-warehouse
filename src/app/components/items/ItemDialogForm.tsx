@@ -26,31 +26,44 @@ import { useDebouncedCallback } from 'use-debounce';
 import { getUsers } from '@/app/actions/users';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { searchCharacters } from '@/app/actions/characters';
+import { useUpdateItem } from '@/lib/hooks/useItems';
 
-export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
+export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFormProps) {
   const grades = GRADES.map((value) => ({ value, label: value }));
   const itemTypes = ITEM_TYPES.map((value) => ({ value, label: value }));
   const queryClient = useQueryClient();
   const [fieldErrors, setFieldErrors] = useState<State['errors']>({});
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [name, setName] = useState(itemToEdit?.name ?? '');
+  const [grade, setGrade] = useState(itemToEdit?.grade ?? '');
+  const [type, setType] = useState(itemToEdit?.type ?? '');
+  const [enchant, setEnchant] = useState(String(itemToEdit?.enchantLevel ?? 0));
+
+  const [searchTerm, setSearchTerm] = useState(itemToEdit?.ownerUser?.username ?? '');
   const [userList, setUserList] = useState<{ id: number; username: string; email: string }[]>([]);
-  const [selectedOwnerId, setSelectedOwnerId] = useState<string>('');
+  const [selectedOwnerId, setSelectedOwnerId] = useState(String(itemToEdit?.ownerUserId ?? ''));
   const [ownerError, setOwnerError] = useState<string>('');
 
-  const [assignedSearchTerm, setAssignedSearchTerm] = useState('');
+  const [assignedSearchTerm, setAssignedSearchTerm] = useState(
+    itemToEdit?.assignedChar?.name ?? ''
+  );
   const [assignedList, setAssignedList] = useState<{ id: number; name: string; class: string }[]>(
     []
   );
-  const [selectedAssignedId, setSelectedAssignedId] = useState<string>('');
+
+  const [selectedAssignedId, setSelectedAssignedId] = useState(
+    String(itemToEdit?.assignedId ?? '')
+  );
   const [AssignedError, setAssignedError] = useState<string>('');
 
-  const [holderSearchTerm, setHolderSearchTerm] = useState('');
+  const [holderSearchTerm, setHolderSearchTerm] = useState(itemToEdit?.holderChar?.name ?? '');
   const [holderList, setHolderList] = useState<{ id: number; name: string; class: string }[]>([]);
-  const [selectedHolderId, setSelectedHolderId] = useState<string>('');
+  const [selectedHolderId, setSelectedHolderId] = useState(String(itemToEdit?.holderId ?? ''));
   const [HolderError, setHolderError] = useState<string>('');
 
-  const mutation = useMutation({
+  const updateMutation = useUpdateItem();
+
+  const addMutation = useMutation({
     mutationFn: (formData: FormData) => addItem(formData),
     onSuccess: (data) => {
       if (!data.success) {
@@ -81,12 +94,29 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
     },
   });
 
+  const resetForm = () => {
+    setName('');
+    setGrade('D');
+    setType('Weapon');
+    setEnchant('0');
+    setSearchTerm('');
+    setSelectedOwnerId('');
+    setUserList([]);
+    setOwnerError('');
+    setAssignedSearchTerm('');
+    setSelectedAssignedId('');
+    setAssignedList([]);
+    setAssignedError('');
+    setHolderSearchTerm('');
+    setSelectedHolderId('');
+    setHolderList([]);
+    setHolderError('');
+    setFieldErrors({});
+  };
+
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
-      setSearchTerm('');
-      setSelectedOwnerId('');
-      setUserList([]);
-      setFieldErrors({});
+      resetForm();
     }
     onOpenChange(newOpen);
   };
@@ -189,7 +219,22 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
     if (selectedHolderId) {
       formData.append('holderId', selectedHolderId);
     }
-    mutation.mutate(formData);
+    if (itemToEdit) {
+      updateMutation.mutate(
+        { id: itemToEdit.id, formData },
+        {
+          onSuccess: (data) => {
+            if (data.success) {
+              queryClient.invalidateQueries({ queryKey: ['items'] });
+              onOpenChange(false);
+              resetForm();
+            } else {
+              setFieldErrors(data.errors || {});
+            }
+          },
+        }
+      );
+    } else addMutation.mutate(formData);
   };
 
   return (
@@ -206,7 +251,8 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
                 <Input
                   id="name"
                   name="name"
-                  defaultValue="Forgotten Blade"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   aria-describedby="customer-error"
                 />
                 <div
@@ -228,7 +274,13 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
               <div>
                 <Field className="w-full max-w-xs">
                   <FieldLabel>Grade</FieldLabel>
-                  <Select items={grades} name="grade" aria-describedby="grade-error">
+                  <Select
+                    items={grades}
+                    name="grade"
+                    value={grade}
+                    onValueChange={(val) => setGrade(val ?? 'D')}
+                    aria-describedby="grade-error"
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -260,7 +312,13 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
               <div>
                 <Field className="w-full max-w-xs">
                   <FieldLabel>Type</FieldLabel>
-                  <Select items={itemTypes} name="type" aria-describedby="type-error">
+                  <Select
+                    items={itemTypes}
+                    name="type"
+                    value={type}
+                    onValueChange={(val) => setType(val ?? 'Weapon')}
+                    aria-describedby="type-error"
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -289,8 +347,9 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
                   <FieldLabel>Enchant</FieldLabel>
                   <Input
                     id="enchant"
-                    placeholder="3"
                     name="enchant"
+                    value={enchant}
+                    onChange={(e) => setEnchant(e.target.value)}
                     aria-describedby="enchant-error"
                   />
                 </Field>
@@ -433,8 +492,14 @@ export function ItemDialogForm({ open, onOpenChange }: ItemDialogFormProps) {
 
           <DialogFooter className="mt-4 pt-4 border-t">
             <DialogClose render={<Button variant="outline">Cancel</Button>} />
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? 'Adding...' : 'Add Item'}
+            <Button type="submit" disabled={addMutation.isPending || updateMutation.isPending}>
+              {addMutation.isPending || updateMutation.isPending
+                ? itemToEdit
+                  ? 'Saving...'
+                  : 'Adding...'
+                : itemToEdit
+                  ? 'Save Changes'
+                  : 'Add Item'}
             </Button>
           </DialogFooter>
         </form>
