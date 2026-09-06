@@ -112,7 +112,7 @@ export const reassignments = snakeCase.table(
   ]
 );
 
-const schema = {
+export const schema = {
   users,
   clans,
   characters,
