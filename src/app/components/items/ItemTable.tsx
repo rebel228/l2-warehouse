@@ -4,6 +4,8 @@ import { ITEM_GRID_COLS } from '@/lib/constants/grid';
 import { buildMenu } from '@/lib/helpers/item-helpers';
 import { useDeleteItem, useItems } from '@/lib/hooks/useItems';
 import { ItemTableProps } from '@/lib/types/dashboard';
+import { useState } from 'react';
+import { ConfirmDialog } from '../shared/AlertDialog';
 
 const headers = ['Name', 'Grade', 'Type', 'Status', 'Owner', 'Assigned', 'Holder'];
 
@@ -11,9 +13,22 @@ export default function ItemTable({ initialItems }: ItemTableProps) {
   const { data: items, isLoading, error } = useItems(initialItems);
   const deleteMutation = useDeleteItem();
 
-  const handleDelete = (id: number) => {
-    if (confirm('Are you sure?')) {
-      deleteMutation.mutate(id);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<number | null>(null);
+
+  const handleDeleteClick = (id: number) => {
+    setItemToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (itemToDelete !== null) {
+      deleteMutation.mutate(itemToDelete, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setItemToDelete(null);
+        },
+      });
     }
   };
 
@@ -31,9 +46,18 @@ export default function ItemTable({ initialItems }: ItemTableProps) {
           ))}
         </div>
         {items?.map((item) => (
-          <ItemRow key={item.id} item={item} actions={buildMenu(item, handleDelete)} />
+          <ItemRow key={item.id} item={item} actions={buildMenu(item, handleDeleteClick)} />
         ))}
       </div>
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        title="Delete Item"
+        description={`Are you sure you want to delete "${itemToDelete}"? This action cannot be undone.`}
+        isPending={deleteMutation.isPending}
+        pendingText="Deleting..."
+      />
     </div>
   );
 }
