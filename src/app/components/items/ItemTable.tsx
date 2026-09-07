@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { ConfirmDialog } from '../shared/AlertDialog';
 import { ItemWithRelations } from '@/app/actions/items';
 import { ItemDialogForm } from './ItemDialogForm';
+import { ItemActionDialog } from './ItemActionDialog';
 
 const headers = ['Name', 'Grade', 'Type', 'Status', 'Owner', 'Assigned', 'Holder'];
 
@@ -15,10 +16,20 @@ export default function ItemTable({ initialItems }: ItemTableProps) {
   const { data: items, isLoading, error } = useItems(initialItems);
   const deleteMutation = useDeleteItem();
 
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
+  const [actionItem, setActionItem] = useState<ItemWithRelations | null>(null);
+  const [actionType, setActionType] = useState<'owner' | 'assigned' | 'holder'>('owner');
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [editingItem, setEditingItem] = useState<ItemWithRelations | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  const handleAction = (item: ItemWithRelations, type: 'owner' | 'assigned' | 'holder') => {
+    setActionItem(item);
+    setActionType(type);
+    setActionDialogOpen(true);
+  };
 
   const handleEditDialogOpenChange = (open: boolean) => {
     if (!open) {
@@ -62,7 +73,11 @@ export default function ItemTable({ initialItems }: ItemTableProps) {
           ))}
         </div>
         {items?.map((item) => (
-          <ItemRow key={item.id} item={item} actions={buildMenu(item, handleDelete, handleEdit)} />
+          <ItemRow
+            key={item.id}
+            item={item}
+            actions={buildMenu(item, handleDelete, handleEdit, handleAction)}
+          />
         ))}
       </div>
       <ItemDialogForm
@@ -79,6 +94,13 @@ export default function ItemTable({ initialItems }: ItemTableProps) {
         description={`Are you sure you want to delete "${itemToDelete}"? This action cannot be undone.`}
         isPending={deleteMutation.isPending}
         pendingText="Deleting..."
+      />
+      <ItemActionDialog
+        open={actionDialogOpen}
+        onOpenChange={setActionDialogOpen}
+        item={actionItem}
+        actionType={actionType}
+        onSuccess={() => {}}
       />
     </div>
   );

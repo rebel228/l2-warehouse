@@ -21,22 +21,23 @@ export function getItemStatus(
 export const buildMenu = (
   item: ItemWithRelations,
   onDelete: (id: number) => void,
-  onEdit: (item: ItemWithRelations) => void
+  onEdit: (item: ItemWithRelations) => void,
+  onAction: (item: ItemWithRelations, type: 'owner' | 'assigned' | 'holder') => void
 ): MenuAction[] => [
   {
     label: 'Change Owner',
     icon: <Users className="h-4 w-4" />,
-    onClick: () => console.log('change owner', item),
+    onClick: () => onAction(item, 'owner'),
   },
   {
     label: 'Reassign',
     icon: <RotateCcw className="h-4 w-4" />,
-    onClick: () => console.log('reassign', item),
+    onClick: () => onAction(item, 'assigned'),
   },
   {
     label: 'Transfer',
     icon: <MoveRight className="h-4 w-4" />,
-    onClick: () => console.log('transfer', item),
+    onClick: () => onAction(item, 'holder'),
   },
   { type: 'separator' },
   {
