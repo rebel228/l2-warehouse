@@ -13,7 +13,6 @@ import { Label } from '@/app/components/ui/label';
 import { useDebouncedCallback } from 'use-debounce';
 import { useState } from 'react';
 import { CharacterFormDialogProps } from '@/lib/types/DialogWindow';
-import { addCharacter } from '@/app/actions/characters';
 import { getUsers } from '@/app/actions/users';
 import {
   Select,
@@ -24,8 +23,8 @@ import {
   SelectValue,
 } from '../ui/select';
 import { CHARACTER_CLASSES } from '@/lib/constants/charecterClasses';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useUpdateCharacter } from '@/lib/hooks/useCharacters';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAddCharacter, useUpdateCharacter } from '@/lib/hooks/useCharacters';
 import { CharacterFieldErrors } from '@/lib/types/mutations-results';
 
 export function CharacterDialogForm({
@@ -44,23 +43,8 @@ export function CharacterDialogForm({
   const [selectedOwnerId, setSelectedOwnerId] = useState(String(characterToEdit?.userId ?? ''));
   const [ownerError, setOwnerError] = useState<string>('');
 
+  const addMutation = useAddCharacter();
   const updateMutation = useUpdateCharacter();
-
-  const addMutation = useMutation({
-    mutationFn: (formData: FormData) => addCharacter(formData),
-    onSuccess: (data) => {
-      if (!data.success) {
-        setFieldErrors(data.errors || {});
-        return;
-      }
-      queryClient.invalidateQueries({ queryKey: ['characters'] });
-      onOpenChange(false);
-      resetForm();
-    },
-    onError: (error) => {
-      console.error('addCharacter mutation failed:', error);
-    },
-  });
 
   const resetForm = () => {
     setName('');
@@ -132,12 +116,21 @@ export function CharacterDialogForm({
         }
       );
     } else {
-      addMutation.mutate(formData);
+      addMutation.mutate(formData, {
+        onSuccess: (data) => {
+          if (data.success) {
+            onOpenChange(false);
+            resetForm();
+          } else {
+            setFieldErrors(data.errors ?? {});
+          }
+        },
+      });
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{characterToEdit ? 'Edit Character' : 'Add New Character'}</DialogTitle>
