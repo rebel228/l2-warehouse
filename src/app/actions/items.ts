@@ -240,3 +240,53 @@ export async function updateItem(id: number, formData: FormData) {
     return { success: false, message: 'Database error' };
   }
 }
+
+export async function updateItemOwner(id: number, userId: number | null) {
+  if (userId !== null) {
+    const userExists = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!userExists.length) {
+      return { success: false, message: 'User not found' };
+    }
+  }
+  await db.update(items).set({ ownerUserId: userId }).where(eq(items.id, id));
+  revalidatePath('/dashboard/items');
+  return { success: true };
+}
+
+export async function updateItemAssigned(id: number, characterId: number | null) {
+  if (characterId !== null) {
+    const charExists = await db
+      .select()
+      .from(characters)
+      .where(eq(characters.id, characterId))
+      .limit(1);
+    if (!charExists.length) {
+      return { success: false, message: 'Character not found' };
+    }
+  }
+  const item = await db.select().from(items).where(eq(items.id, id)).limit(1);
+  const currentHolderId = item[0]?.holderId ?? null;
+  const status = getItemStatus(characterId, currentHolderId);
+  await db.update(items).set({ assignedId: characterId, status }).where(eq(items.id, id));
+  revalidatePath('/dashboard/items');
+  return { success: true };
+}
+
+export async function updateItemHolder(id: number, characterId: number | null) {
+  if (characterId !== null) {
+    const charExists = await db
+      .select()
+      .from(characters)
+      .where(eq(characters.id, characterId))
+      .limit(1);
+    if (!charExists.length) {
+      return { success: false, message: 'Character not found' };
+    }
+  }
+  const item = await db.select().from(items).where(eq(items.id, id)).limit(1);
+  const currentAssignedId = item[0]?.assignedId ?? null;
+  const status = getItemStatus(currentAssignedId, characterId);
+  await db.update(items).set({ holderId: characterId, status }).where(eq(items.id, id));
+  revalidatePath('/dashboard/items');
+  return { success: true };
+}

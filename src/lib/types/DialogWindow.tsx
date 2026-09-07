@@ -1,3 +1,4 @@
+import { CharacterWithRelations } from '@/app/actions/characters';
 import { ItemWithRelations } from '@/app/actions/items';
 
 export interface ItemDialogFormProps {
@@ -10,4 +11,5 @@ export interface CharacterFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children?: React.ReactNode;
+  characterToEdit?: CharacterWithRelations | null;
 }
