@@ -1,9 +1,10 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { characters, items, users } from '@/lib/db/schema';
+import { characters, items, reassignments, transfers, users } from '@/lib/db/schema';
+import { getItemStatus } from '@/lib/helpers/item-helpers';
 import { addCharacterSchema } from '@/lib/validations/character.schema';
-import { eq, ilike } from 'drizzle-orm';
+import { eq, ilike, or } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 export type CharacterWithRelations = Awaited<ReturnType<typeof getCharacters>>[number];
@@ -17,6 +18,8 @@ export type State = {
   message?: string | null;
   success?: boolean;
 };
+
+const getCurrentUserId = () => 1; // temporary, change to user after adding auth
 
 export async function addCharacter(formData: FormData): Promise<State> {
   console.log(' formData entries:', Array.from(formData.entries()));
@@ -159,23 +162,50 @@ export async function searchCharacters(search: string = '') {
 }
 
 export async function deleteCharacter(id: number) {
+  const userId = getCurrentUserId();
+
+  const relatedItems = await db
+    .select()
+    .from(items)
+    .where(or(eq(items.assignedId, id), eq(items.holderId, id)));
+
+  if (relatedItems.length === 0) {
+    await db.delete(characters).where(eq(characters.id, id));
+    revalidatePath('/dashboard/characters');
+    revalidatePath('/dashboard/items');
+    return;
+  }
+
   await db.transaction(async (tx) => {
-    await tx
-      .update(items)
-      .set({
-        assignedId: null,
-        status: 'in_bank',
-      })
-      .where(eq(items.assignedId, id));
+    for (const item of relatedItems) {
+      const updates: Partial<typeof items.$inferInsert> = {};
 
-    await tx
-      .update(items)
-      .set({
-        holderId: null,
-        status: 'in_bank',
-      })
-      .where(eq(items.holderId, id));
+      if (item.assignedId === id) {
+        updates.assignedId = null;
+        await tx.insert(reassignments).values({
+          itemId: item.id,
+          fromAssignedId: id,
+          toAssignedId: null,
+          changedByUserId: userId,
+        });
+      }
 
+      if (item.holderId === id) {
+        updates.holderId = null;
+        await tx.insert(transfers).values({
+          itemId: item.id,
+          fromHolderId: id,
+          toHolderId: null,
+          changedByUserId: userId,
+        });
+      }
+
+      const newAssignedId = item.assignedId === id ? null : item.assignedId;
+      const newHolderId = item.holderId === id ? null : item.holderId;
+      updates.status = getItemStatus(newAssignedId, newHolderId);
+
+      await tx.update(items).set(updates).where(eq(items.id, item.id));
+    }
     await tx.delete(characters).where(eq(characters.id, id));
   });
 
