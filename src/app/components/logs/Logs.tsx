@@ -48,7 +48,7 @@ export default function Logs() {
                     </td>
                     <td className="px-4 py-2 font-medium">{log.itemName}</td>
                     <td className="px-4 py-2 text-sm">{actionText}</td>
-                    <td className="px-4 py-2 text-sm">{log.changedBy || 'Unknown'}</td>
+                    <td className="px-4 py-2 text-sm">{'Unknown'}</td>
                     {/* Change changyBy later, after authorization */}
                   </tr>
                 );
