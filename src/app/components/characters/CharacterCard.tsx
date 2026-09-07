@@ -16,7 +16,7 @@ import { useState } from 'react';
 import { CharacterWithRelations } from '@/app/actions/characters';
 import { ConfirmDialog } from '../shared/AlertDialog';
 
-export default function CharacterCard({ character }: CharacterCardProps) {
+export default function CharacterCard({ character, onEdit }: CharacterCardProps) {
   const itemList = buildItemList(character);
   const deleteMutation = useDeleteCharacter();
 
@@ -25,7 +25,7 @@ export default function CharacterCard({ character }: CharacterCardProps) {
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log('edit', character);
+    onEdit(character);
   };
 
   const handleDeleteClick = (char: CharacterWithRelations) => {

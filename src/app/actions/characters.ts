@@ -3,7 +3,7 @@
 import { db } from '@/lib/db';
 import { characters, items, users } from '@/lib/db/schema';
 import { addCharacterSchema } from '@/lib/validations/character.schema';
-import { eq, ilike, or } from 'drizzle-orm';
+import { eq, ilike } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 export type CharacterWithRelations = Awaited<ReturnType<typeof getCharacters>>[number];
@@ -53,6 +53,50 @@ export async function addCharacter(formData: FormData): Promise<State> {
       message: 'Database error: failed to add character',
       success: false,
     };
+  }
+}
+
+export async function updateCharacter(id: number, formData: FormData) {
+  const validatedFields = addCharacterSchema.safeParse({
+    name: formData.get('name'),
+    class: formData.get('class'),
+    userId: formData.get('userId') ? Number(formData.get('userId')) : null,
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      success: false,
+    };
+  }
+
+  const { name, class: characterClass, userId } = validatedFields.data;
+
+  if (userId) {
+    const userExists = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!userExists.length) {
+      return {
+        errors: { userId: ['User does not exist'] },
+        success: false,
+      };
+    }
+  }
+
+  try {
+    await db
+      .update(characters)
+      .set({
+        name,
+        class: characterClass,
+        userId,
+      })
+      .where(eq(characters.id, id));
+
+    revalidatePath('/dashboard/characters');
+    return { success: true };
+  } catch (error) {
+    console.error('Update error:', error);
+    return { success: false, message: 'Database error' };
   }
 }
 

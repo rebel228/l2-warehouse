@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CharacterWithRelations, deleteCharacter, getCharacters } from '@/app/actions/characters';
+import {
+  CharacterWithRelations,
+  deleteCharacter,
+  getCharacters,
+  updateCharacter,
+} from '@/app/actions/characters';
 
 export function useCharacters(initialData?: CharacterWithRelations[]) {
   return useQuery({
@@ -7,6 +12,19 @@ export function useCharacters(initialData?: CharacterWithRelations[]) {
     queryFn: getCharacters,
     initialData,
     staleTime: 10 * 1000,
+  });
+}
+
+export function useUpdateCharacter() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, formData }: { id: number; formData: FormData }) =>
+      updateCharacter(id, formData),
+    onSuccess: (data) => {
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ['characters'] });
+      }
+    },
   });
 }
 
