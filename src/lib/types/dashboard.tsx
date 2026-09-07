@@ -19,6 +19,7 @@ export interface CharacterTableProps {
 export interface CharacterCardProps {
   character: CharacterWithRelations;
   actions?: MenuAction[];
+  onEdit: (character: CharacterWithRelations) => void;
 }
 
 export type itemVariant = 'assigned_in_place' | 'assigned_missing' | 'held_foreign';

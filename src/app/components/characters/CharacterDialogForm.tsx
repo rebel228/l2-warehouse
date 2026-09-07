@@ -25,17 +25,27 @@ import {
 } from '../ui/select';
 import { CHARACTER_CLASSES } from '@/lib/constants/charecterClasses';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useUpdateCharacter } from '@/lib/hooks/useCharacters';
 
-export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogProps) {
+export function CharacterDialogForm({
+  open,
+  onOpenChange,
+  characterToEdit,
+}: CharacterFormDialogProps) {
   const [fieldErrors, setFieldErrors] = useState<State['errors']>({});
   const queryClient = useQueryClient();
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [name, setName] = useState(characterToEdit?.name ?? '');
+  const [characterClass, setCharacterClass] = useState(characterToEdit?.class ?? '');
+
+  const [searchTerm, setSearchTerm] = useState(characterToEdit?.user?.username ?? '');
   const [userList, setUserList] = useState<{ id: number; username: string; email: string }[]>([]);
-  const [selectedOwnerId, setSelectedOwnerId] = useState<string>('');
+  const [selectedOwnerId, setSelectedOwnerId] = useState(String(characterToEdit?.userId ?? ''));
   const [ownerError, setOwnerError] = useState<string>('');
 
-  const mutation = useMutation({
+  const updateMutation = useUpdateCharacter();
+
+  const addMutation = useMutation({
     mutationFn: (formData: FormData) => addCharacter(formData),
     onSuccess: (data) => {
       if (!data.success) {
@@ -44,17 +54,29 @@ export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogP
       }
       queryClient.invalidateQueries({ queryKey: ['characters'] });
       onOpenChange(false);
-
-      setSearchTerm('');
-      setSelectedOwnerId('');
-      setUserList([]);
-      setOwnerError('');
-      setFieldErrors({});
+      resetForm();
     },
     onError: (error) => {
       console.error('Mutation error:', error);
     },
   });
+
+  const resetForm = () => {
+    setName('');
+    setCharacterClass('');
+    setSearchTerm('');
+    setSelectedOwnerId('');
+    setUserList([]);
+    setOwnerError('');
+    setFieldErrors({});
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      resetForm();
+    }
+    onOpenChange(newOpen);
+  };
 
   const handleSearch = useDebouncedCallback(async (value: string) => {
     if (value.length >= 1) {
@@ -92,21 +114,44 @@ export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogP
     if (selectedOwnerId) {
       formData.append('userId', selectedOwnerId);
     }
-    mutation.mutate(formData);
+    if (characterToEdit) {
+      updateMutation.mutate(
+        { id: characterToEdit.id, formData },
+        {
+          onSuccess: (data) => {
+            if (data.success) {
+              queryClient.invalidateQueries({ queryKey: ['characters'] });
+              onOpenChange(false);
+              resetForm();
+            } else {
+              setFieldErrors(data.errors || {});
+            }
+          },
+        }
+      );
+    } else {
+      addMutation.mutate(formData);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Add New Character</DialogTitle>
+          <DialogTitle>{characterToEdit ? 'Edit Character' : 'Add New Character'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col">
           <FieldGroup className="gap-2">
             <Field>
               <Label htmlFor="name">Character Name</Label>
               <div className="flex flex-col">
-                <Input id="name" name="name" aria-describedby="character-error" />
+                <Input
+                  id="name"
+                  name="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  aria-describedby="character-error"
+                />
                 <div
                   id="character-error"
                   aria-live="polite"
@@ -124,7 +169,12 @@ export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogP
             <Field>
               <Label htmlFor="class">Class</Label>
               <div className="flex flex-col">
-                <Select name="class" aria-describedby="class-error">
+                <Select
+                  name="class"
+                  value={characterClass}
+                  onValueChange={(val) => setCharacterClass(val ?? '')}
+                  aria-describedby="class-error"
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select class" />
                   </SelectTrigger>
@@ -196,8 +246,14 @@ export function CharacterDialogForm({ open, onOpenChange }: CharacterFormDialogP
 
           <DialogFooter className="mt-4 pt-4 border-t">
             <DialogClose render={<Button variant="outline">Cancel</Button>} />
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? 'Creating...' : 'Create Character'}
+            <Button type="submit" disabled={addMutation.isPending || updateMutation.isPending}>
+              {addMutation.isPending || updateMutation.isPending
+                ? characterToEdit
+                  ? 'Saving...'
+                  : 'Adding...'
+                : characterToEdit
+                  ? 'Save Changes'
+                  : 'Create Character'}
             </Button>
           </DialogFooter>
         </form>
