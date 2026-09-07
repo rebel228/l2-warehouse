@@ -3,9 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { db } from '../../lib/db';
 import { addItemSchema } from '../../lib/validations/item.schema';
-import { characters, items, users } from '../../lib/db/schema';
+import { items, users, characters, transfers, reassignments } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getItemStatus } from '@/lib/helpers/item-helpers';
+
+const getCurrentUserId = () => 1; // temporary, change to user after adding auth
 
 export type State = {
   errors?: {
@@ -175,7 +177,15 @@ export async function updateItem(id: number, formData: FormData) {
     };
   }
 
+  const userId = getCurrentUserId();
+  const currentItem = await db.select().from(items).where(eq(items.id, id)).limit(1);
+  if (!currentItem.length) return { success: false, message: 'Item not found' };
+
   const { name, grade, type, enchant, ownerUserId, assignedId, holderId } = validatedFields.data;
+  const oldAssignedId = currentItem[0].assignedId;
+  const oldHolderId = currentItem[0].holderId;
+  const assignedChanged = oldAssignedId !== assignedId;
+  const holderChanged = oldHolderId !== holderId;
 
   if (ownerUserId) {
     const userExists = await db.select().from(users).where(eq(users.id, ownerUserId)).limit(1);
@@ -217,8 +227,8 @@ export async function updateItem(id: number, formData: FormData) {
 
   const status = getItemStatus(assignedId, holderId);
 
-  try {
-    await db
+  await db.transaction(async (tx) => {
+    await tx
       .update(items)
       .set({
         name,
@@ -228,17 +238,31 @@ export async function updateItem(id: number, formData: FormData) {
         ownerUserId,
         assignedId,
         holderId,
-        status,
+        status: status,
         updatedAt: new Date(),
       })
       .where(eq(items.id, id));
 
-    revalidatePath('/dashboard/items');
-    return { success: true };
-  } catch (error) {
-    console.error('Update error:', error);
-    return { success: false, message: 'Database error' };
-  }
+    if (assignedChanged) {
+      await tx.insert(reassignments).values({
+        itemId: id,
+        fromAssignedId: oldAssignedId,
+        toAssignedId: assignedId,
+        changedByUserId: userId,
+      });
+    }
+    if (holderChanged) {
+      await tx.insert(transfers).values({
+        itemId: id,
+        fromHolderId: oldHolderId,
+        toHolderId: holderId,
+        changedByUserId: userId,
+      });
+    }
+  });
+
+  revalidatePath('/dashboard/items');
+  return { success: true };
 }
 
 export async function updateItemOwner(id: number, userId: number | null) {
@@ -254,6 +278,8 @@ export async function updateItemOwner(id: number, userId: number | null) {
 }
 
 export async function updateItemAssigned(id: number, characterId: number | null) {
+  const userId = getCurrentUserId();
+
   if (characterId !== null) {
     const charExists = await db
       .select()
@@ -265,14 +291,31 @@ export async function updateItemAssigned(id: number, characterId: number | null)
     }
   }
   const item = await db.select().from(items).where(eq(items.id, id)).limit(1);
+  if (!item.length) return { success: false, message: 'Item not found' };
+
+  const oldAssignedId = item[0].assignedId;
+  if (oldAssignedId === characterId) return { success: true };
+
   const currentHolderId = item[0]?.holderId ?? null;
   const status = getItemStatus(characterId, currentHolderId);
-  await db.update(items).set({ assignedId: characterId, status }).where(eq(items.id, id));
+
+  await db.transaction(async (tx) => {
+    await tx.update(items).set({ assignedId: characterId, status }).where(eq(items.id, id));
+    await tx.insert(reassignments).values({
+      itemId: id,
+      fromAssignedId: oldAssignedId,
+      toAssignedId: characterId,
+      changedByUserId: userId,
+    });
+  });
+
   revalidatePath('/dashboard/items');
   return { success: true };
 }
 
 export async function updateItemHolder(id: number, characterId: number | null) {
+  const userId = getCurrentUserId();
+
   if (characterId !== null) {
     const charExists = await db
       .select()
@@ -284,9 +327,24 @@ export async function updateItemHolder(id: number, characterId: number | null) {
     }
   }
   const item = await db.select().from(items).where(eq(items.id, id)).limit(1);
+  if (!item.length) return { success: false, message: 'Item not found' };
+
+  const oldHolderId = item[0].holderId;
+  if (oldHolderId === characterId) return { success: true };
+
   const currentAssignedId = item[0]?.assignedId ?? null;
   const status = getItemStatus(currentAssignedId, characterId);
-  await db.update(items).set({ holderId: characterId, status }).where(eq(items.id, id));
+
+  await db.transaction(async (tx) => {
+    await tx.update(items).set({ holderId: characterId, status }).where(eq(items.id, id));
+    await tx.insert(transfers).values({
+      itemId: id,
+      fromHolderId: oldHolderId,
+      toHolderId: characterId,
+      changedByUserId: userId,
+    });
+  });
+
   revalidatePath('/dashboard/items');
   return { success: true };
 }
