@@ -34,22 +34,19 @@ export default function CharacterCard({ character, onEdit }: CharacterCardProps)
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (characterToDelete) {
-      deleteMutation.mutate(characterToDelete.id, {
-        onSuccess: (data) => {
-          if (!data.success) {
-            toast.error(data.message);
-            return;
-          }
+  const handleConfirmDelete = async () => {
+    if (!characterToDelete) return;
+    const data = await deleteMutation.mutateAsync(characterToDelete.id);
 
-          toast.success(data.message);
-
-          setDeleteDialogOpen(false);
-          setCharacterToDelete(null);
-        },
-      });
+    if (!data.success) {
+      toast.error(data.message);
+      return;
     }
+
+    toast.success(data.message);
+
+    setDeleteDialogOpen(false);
+    setCharacterToDelete(null);
   };
 
   return (
