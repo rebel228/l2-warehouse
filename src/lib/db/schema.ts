@@ -184,7 +184,21 @@ export const relations = defineRelations(schema, (r) => ({
     ownedItems: r.many.items(),
     transfers: r.many.transfers(),
     reassignments: r.many.reassignments(),
-    itemEvents: r.many.itemEvents(),
+    itemEventsChangedBy: r.many.itemEvents({
+      from: r.users.id,
+      to: r.itemEvents.changedByUserId,
+      alias: 'itemEventsChangedBy',
+    }),
+    itemEventsFromOwner: r.many.itemEvents({
+      from: r.users.id,
+      to: r.itemEvents.fromOwnerUserId,
+      alias: 'itemEventsFromOwner',
+    }),
+    itemEventsToOwner: r.many.itemEvents({
+      from: r.users.id,
+      to: r.itemEvents.toOwnerUserId,
+      alias: 'itemEventsToOwner',
+    }),
   },
   clans: {
     characters: r.many.characters(),
@@ -323,11 +337,41 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.itemEvents.itemId,
       to: r.items.id,
     }),
-
     changedByUser: r.one.users({
       from: r.itemEvents.changedByUserId,
       to: r.users.id,
       optional: false,
+    }),
+    fromOwner: r.one.users({
+      from: r.itemEvents.fromOwnerUserId,
+      to: r.users.id,
+      alias: 'itemEventsFromOwner',
+    }),
+    toOwner: r.one.users({
+      from: r.itemEvents.toOwnerUserId,
+      to: r.users.id,
+      alias: 'itemEventsToOwner',
+    }),
+    fromAssigned: r.one.characters({
+      from: r.itemEvents.fromAssignedId,
+      to: r.characters.id,
+      alias: 'itemEventsFromAssigned',
+    }),
+    toAssigned: r.one.characters({
+      from: r.itemEvents.toAssignedId,
+      to: r.characters.id,
+      alias: 'itemEventsToAssigned',
+    }),
+    fromHolder: r.one.characters({
+      from: r.itemEvents.fromHolderId,
+      to: r.characters.id,
+      alias: 'itemEventsFromHolder',
+    }),
+
+    toHolder: r.one.characters({
+      from: r.itemEvents.toHolderId,
+      to: r.characters.id,
+      alias: 'itemEventsToHolder',
     }),
   },
 }));
