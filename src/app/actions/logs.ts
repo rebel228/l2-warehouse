@@ -74,6 +74,7 @@ export async function getLogs(): Promise<LogEntry[]> {
       to,
       changedBy: event.changedByUser?.username ?? 'Unknown',
       timestamp: event.createdAt,
+      snapshot: event.snapshot,
     };
   });
 }
