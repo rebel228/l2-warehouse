@@ -4,9 +4,24 @@ import { db } from '@/lib/db';
 import { LogEntry } from '@/lib/types/logs';
 
 export async function getLogs(): Promise<LogEntry[]> {
-  const transferLogs = await db.query.transfers.findMany({
+  const events = await db.query.itemEvents.findMany({
     with: {
-      item: {
+      fromOwner: {
+        columns: {
+          username: true,
+        },
+      },
+      toOwner: {
+        columns: {
+          username: true,
+        },
+      },
+      fromAssigned: {
+        columns: {
+          name: true,
+        },
+      },
+      toAssigned: {
         columns: {
           name: true,
         },
@@ -27,57 +42,38 @@ export async function getLogs(): Promise<LogEntry[]> {
         },
       },
     },
-    orderBy: (transfers, { desc }) => [desc(transfers.transferredAt)],
+    orderBy: (itemEvents, { desc }) => [desc(itemEvents.createdAt), desc(itemEvents.id)],
   });
 
-  const reassignmentLogs = await db.query.reassignments.findMany({
-    with: {
-      item: {
-        columns: {
-          name: true,
-        },
-      },
-      fromAssigned: {
-        columns: {
-          name: true,
-        },
-      },
-      toAssigned: {
-        columns: {
-          name: true,
-        },
-      },
-      changedByUser: {
-        columns: {
-          username: true,
-        },
-      },
-    },
-    orderBy: (reassignments, { desc }) => [desc(reassignments.reassignedAt)],
+  return events.map((event) => {
+    let from: string | null = null;
+    let to: string | null = null;
+
+    switch (event.type) {
+      case 'owner_change':
+        from = event.fromOwner?.username ?? null;
+        to = event.toOwner?.username ?? null;
+        break;
+
+      case 'reassignment':
+        from = event.fromAssigned?.name ?? null;
+        to = event.toAssigned?.name ?? null;
+        break;
+
+      case 'transfer':
+        from = event.fromHolder?.name ?? null;
+        to = event.toHolder?.name ?? null;
+        break;
+    }
+
+    return {
+      id: event.id,
+      type: event.type,
+      itemName: event.snapshot.name,
+      from,
+      to,
+      changedBy: event.changedByUser?.username ?? 'Unknown',
+      timestamp: event.createdAt,
+    };
   });
-
-  const transferEntries: LogEntry[] = transferLogs.map((t) => ({
-    id: t.id,
-    type: 'transfer',
-    itemName: t.item?.name ?? 'Unknown item',
-    from: t.fromHolder?.name ?? null,
-    to: t.toHolder?.name ?? null,
-    changedBy: t.changedByUser?.username ?? 'Unknown',
-    timestamp: t.transferredAt,
-  }));
-
-  const reassignmentEntries: LogEntry[] = reassignmentLogs.map((r) => ({
-    id: r.id,
-    type: 'reassignment',
-    itemName: r.item?.name ?? 'Unknown item',
-    from: r.fromAssigned?.name ?? null,
-    to: r.toAssigned?.name ?? null,
-    changedBy: r.changedByUser?.username ?? 'Unknown',
-    timestamp: r.reassignedAt,
-  }));
-
-  const allLogs = [...transferEntries, ...reassignmentEntries];
-  allLogs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-
-  return allLogs;
 }
