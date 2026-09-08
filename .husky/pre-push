@@ -2,3 +2,9 @@
 
 echo "Running tests..."
 pnpm test
+
+echo "Running ESLint..."
+pnpm eslint-check || exit 1
+
+echo "Running build..."
+pnpm build || exit 1
