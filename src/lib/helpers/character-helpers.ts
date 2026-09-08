@@ -1,7 +1,7 @@
 import { CharacterWithRelations } from '@/app/actions/characters';
 import { ItemGroup } from '../types/dashboard';
 
-export const buildItemList = (character: CharacterWithRelations): ItemGroup[] => {
+export function buildItemList(character: CharacterWithRelations): ItemGroup[] {
   const assigned = character.assignedItems ?? [];
   const held = character.heldItems ?? [];
 
@@ -21,4 +21,4 @@ export const buildItemList = (character: CharacterWithRelations): ItemGroup[] =>
     }));
 
   return [...assignedGroups, ...heldForeignGroups];
-};
+}
