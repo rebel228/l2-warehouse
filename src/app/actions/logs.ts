@@ -6,36 +6,6 @@ import { LogEntry } from '@/lib/types/logs';
 export async function getLogs(): Promise<LogEntry[]> {
   const events = await db.query.itemEvents.findMany({
     with: {
-      fromOwner: {
-        columns: {
-          username: true,
-        },
-      },
-      toOwner: {
-        columns: {
-          username: true,
-        },
-      },
-      fromAssigned: {
-        columns: {
-          name: true,
-        },
-      },
-      toAssigned: {
-        columns: {
-          name: true,
-        },
-      },
-      fromHolder: {
-        columns: {
-          name: true,
-        },
-      },
-      toHolder: {
-        columns: {
-          name: true,
-        },
-      },
       changedByUser: {
         columns: {
           username: true,
@@ -51,18 +21,18 @@ export async function getLogs(): Promise<LogEntry[]> {
 
     switch (event.type) {
       case 'owner_change':
-        from = event.fromOwner?.username ?? null;
-        to = event.toOwner?.username ?? null;
+        from = event.fromOwnerName;
+        to = event.toOwnerName;
         break;
 
       case 'reassignment':
-        from = event.fromAssigned?.name ?? null;
-        to = event.toAssigned?.name ?? null;
+        from = event.fromAssignedName;
+        to = event.toAssignedName;
         break;
 
       case 'transfer':
-        from = event.fromHolder?.name ?? null;
-        to = event.toHolder?.name ?? null;
+        from = event.fromHolderName;
+        to = event.toHolderName;
         break;
     }
 

@@ -2,7 +2,11 @@
 
 import { db } from '@/lib/db';
 import { characters, itemEvents, items, users } from '@/lib/db/schema';
-import { createItemSnapshot, getItemStatus } from '@/lib/helpers/item-helpers';
+import {
+  createItemSnapshot,
+  getItemSnapshotRelations,
+  getItemStatus,
+} from '@/lib/helpers/item-helpers';
 import { ActionResult, CharacterFieldErrors } from '@/lib/types/mutations-results';
 import { addCharacterSchema } from '@/lib/validations/character.schema';
 import { eq, ilike, or } from 'drizzle-orm';
@@ -174,6 +178,15 @@ export async function deleteCharacter(id: number): Promise<ActionResult> {
     }
 
     await db.transaction(async (tx) => {
+      const [character] = await tx
+        .select({ name: characters.name })
+        .from(characters)
+        .where(eq(characters.id, id))
+        .limit(1);
+      if (!character) throw new Error('Character not found.');
+
+      const characterName = character.name;
+
       for (const item of relatedItems) {
         const assignedChanged = item.assignedId === id;
         const holderChanged = item.holderId === id;
@@ -196,14 +209,25 @@ export async function deleteCharacter(id: number): Promise<ActionResult> {
           throw new Error('Failed to update item');
         }
 
+        const relations = await getItemSnapshotRelations(tx, updatedItem);
+
         if (assignedChanged) {
           await tx.insert(itemEvents).values({
             itemId: item.id,
             type: 'reassignment',
+
             fromAssignedId: id,
+            fromAssignedName: characterName,
+
             toAssignedId: null,
+            toAssignedName: null,
+
             changedByUserId: userId,
-            snapshot: createItemSnapshot(updatedItem),
+            snapshot: createItemSnapshot(updatedItem, {
+              ownerName: relations.ownerName,
+              assignedName: relations.assignedName,
+              holderName: relations.holderName,
+            }),
           });
         }
 
@@ -211,10 +235,19 @@ export async function deleteCharacter(id: number): Promise<ActionResult> {
           await tx.insert(itemEvents).values({
             itemId: item.id,
             type: 'transfer',
+
             fromHolderId: id,
+            fromHolderName: characterName,
+
             toHolderId: null,
+            toHolderName: null,
+
             changedByUserId: userId,
-            snapshot: createItemSnapshot(updatedItem),
+            snapshot: createItemSnapshot(updatedItem, {
+              ownerName: relations.ownerName,
+              assignedName: relations.assignedName,
+              holderName: relations.holderName,
+            }),
           });
         }
       }

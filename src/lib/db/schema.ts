@@ -25,9 +25,20 @@ export type ItemEventSnapshot = {
   status: string;
 
   ownerUserId: number | null;
+  ownerName: string | null;
   ownerClanId: number | null;
+
   assignedId: number | null;
+  assignedName: string | null;
+
   holderId: number | null;
+  holderName: string | null;
+};
+
+export type ItemEventSnapshotRelations = {
+  ownerName: string | null;
+  assignedName: string | null;
+  holderName: string | null;
 };
 
 export const users = snakeCase.table('users', {
@@ -142,13 +153,22 @@ export const itemEvents = snakeCase.table(
     type: itemEventType().notNull(),
 
     fromOwnerUserId: integer().references(() => users.id),
+    fromOwnerName: varchar({ length: 255 }),
+
     toOwnerUserId: integer().references(() => users.id),
+    toOwnerName: varchar({ length: 255 }),
 
     fromAssignedId: integer(),
+    fromAssignedName: varchar({ length: 255 }),
+
     toAssignedId: integer(),
+    toAssignedName: varchar({ length: 255 }),
 
     fromHolderId: integer(),
+    fromHolderName: varchar({ length: 255 }),
+
     toHolderId: integer(),
+    toHolderName: varchar({ length: 255 }),
 
     changedByUserId: integer()
       .notNull()
