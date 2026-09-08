@@ -24,7 +24,7 @@ export default function CharacterCard({ character, onEdit }: CharacterCardProps)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [characterToDelete, setCharacterToDelete] = useState<CharacterWithRelations | null>(null);
 
-  function getDeleteDescription(character: CharacterWithRelations): string {
+  const getDeleteDescription = (character: CharacterWithRelations): string => {
     const assignedCount = character.assignedItems?.length ?? 0;
     const heldCount = character.heldItems?.length ?? 0;
 
@@ -33,7 +33,7 @@ export default function CharacterCard({ character, onEdit }: CharacterCardProps)
           assignedCount > 0 && heldCount > 0 ? ' ' : ''
         }${heldCount > 0 ? `All ${heldCount} currently possessed item(s) will be moved to the bank.` : ''}`
       : `Are you sure you want to delete "${character.name}"? This action cannot be undone.`;
-  }
+  };
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
