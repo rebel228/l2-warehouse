@@ -65,8 +65,9 @@ export function ItemActionDialog({
         results = chars.map((c) => ({ id: c.id, label: c.name, extra: c.class }));
       }
       setOptions(results);
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error('Failed to search:', error);
+      setOptions([]);
     }
   }, 300);
 
@@ -98,24 +99,27 @@ export function ItemActionDialog({
     }
     if (!item) return;
 
-    // Определяем, какую мутацию вызывать
     if (isOwner) {
       ownerMutation.mutate(
         { id: item.id, userId: selectedId },
         {
           onSuccess: (data) => {
-            if (data.success) {
-              onOpenChange(false);
-              resetState();
-              onSuccess?.();
-            } else {
-              setError(data.message || 'Update failed');
+            if (!data.success) {
+              setError(data.message ?? 'Update failed');
+              return;
             }
+
+            onOpenChange(false);
+            resetState();
+            onSuccess?.();
           },
           onError: () => setError('Update failed'),
         }
       );
-    } else if (actionType === 'assigned') {
+      return;
+    }
+
+    if (actionType === 'assigned') {
       assignedMutation.mutate(
         { id: item.id, characterId: selectedId },
         {
@@ -125,29 +129,31 @@ export function ItemActionDialog({
               resetState();
               onSuccess?.();
             } else {
-              setError(data.message || 'Update failed');
+              setError(data.message ?? 'Update failed');
             }
           },
           onError: () => setError('Update failed'),
         }
       );
-    } else {
-      holderMutation.mutate(
-        { id: item.id, characterId: selectedId },
-        {
-          onSuccess: (data) => {
-            if (data.success) {
-              onOpenChange(false);
-              resetState();
-              onSuccess?.();
-            } else {
-              setError(data.message || 'Update failed');
-            }
-          },
-          onError: () => setError('Update failed'),
-        }
-      );
+      return;
     }
+
+    holderMutation.mutate(
+      { id: item.id, characterId: selectedId },
+      {
+        onSuccess: (data) => {
+          if (!data.success) {
+            setError(data.message ?? 'Update failed');
+            return;
+          }
+
+          onOpenChange(false);
+          resetState();
+          onSuccess?.();
+        },
+        onError: () => setError('Update failed'),
+      }
+    );
   };
 
   const handleOpenChange = (newOpen: boolean) => {
