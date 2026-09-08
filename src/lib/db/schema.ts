@@ -144,11 +144,11 @@ export const itemEvents = snakeCase.table(
     fromOwnerUserId: integer().references(() => users.id),
     toOwnerUserId: integer().references(() => users.id),
 
-    fromAssignedId: integer().references(() => characters.id),
-    toAssignedId: integer().references(() => characters.id),
+    fromAssignedId: integer(),
+    toAssignedId: integer(),
 
-    fromHolderId: integer().references(() => characters.id),
-    toHolderId: integer().references(() => characters.id),
+    fromHolderId: integer(),
+    toHolderId: integer(),
 
     changedByUserId: integer()
       .notNull()
