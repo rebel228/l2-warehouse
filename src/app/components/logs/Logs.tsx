@@ -1,12 +1,32 @@
 'use client';
 
 import { useLogs } from '@/lib/hooks/useLogs';
+import { LogEntry } from '@/lib/types/logs';
 
 export default function Logs() {
   const { data: logs, isLoading, error } = useLogs();
 
   if (isLoading) return <div>Loading logs...</div>;
   if (error) return <div>Error loading logs</div>;
+
+  const getActionText = (log: LogEntry) => {
+    switch (log.type) {
+      case 'item_created':
+        return 'Item created';
+
+      case 'item_deleted':
+        return 'Item deleted';
+
+      case 'owner_change':
+        return `Owner changed from ${log.from || '—'} to ${log.to || '—'}`;
+
+      case 'reassignment':
+        return `Reassigned from ${log.from || '—'} to ${log.to || '—'}`;
+
+      case 'transfer':
+        return `Transferred from ${log.from || 'bank'} to ${log.to || 'bank'}`;
+    }
+  };
 
   return (
     <div className="w-full">
@@ -25,16 +45,6 @@ export default function Logs() {
             </thead>
             <tbody>
               {logs?.map((log) => {
-                let actionText = '';
-                if (log.type === 'transfer') {
-                  const from = log.from || 'bank';
-                  const to = log.to || 'bank';
-                  actionText = `Transferred from ${from} to ${to}`;
-                } else {
-                  const from = log.from || '—';
-                  const to = log.to || '—';
-                  actionText = `Reassigned from ${from} to ${to}`;
-                }
                 return (
                   <tr key={`${log.type}-${log.id}`} className="border-b hover:bg-muted/30">
                     <td className="px-4 py-2 text-sm">
@@ -47,7 +57,7 @@ export default function Logs() {
                       })}
                     </td>
                     <td className="px-4 py-2 font-medium">{log.itemName}</td>
-                    <td className="px-4 py-2 text-sm">{actionText}</td>
+                    <td className="px-4 py-2 text-sm">{getActionText(log)}</td>
                     <td className="px-4 py-2 text-sm">{'Unknown'}</td>
                     {/* Change changyBy later, after authorization */}
                   </tr>
