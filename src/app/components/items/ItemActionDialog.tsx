@@ -21,6 +21,8 @@ import {
   useUpdateItemAssigned,
   useUpdateItemHolder,
 } from '@/lib/hooks/useItems';
+import { ItemFieldErrors } from '@/lib/types/mutations-results';
+import { toast } from 'sonner';
 
 interface ItemActionDialogProps {
   open: boolean;
@@ -40,7 +42,7 @@ export function ItemActionDialog({
   const [searchTerm, setSearchTerm] = useState('');
   const [options, setOptions] = useState<{ id: number; label: string; extra?: string }[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [error, setError] = useState<string>('');
+  const [fieldErrors, setFieldErrors] = useState<ItemFieldErrors>({});
 
   const ownerMutation = useUpdateItemOwner();
   const assignedMutation = useUpdateItemAssigned();
@@ -49,6 +51,9 @@ export function ItemActionDialog({
   const isOwner = actionType === 'owner';
   const title = isOwner ? 'Change Owner' : actionType === 'assigned' ? 'Reassign' : 'Transfer';
   const placeholder = isOwner ? 'Search user...' : 'Search character...';
+
+  const errorFieldName =
+    actionType === 'owner' ? 'ownerUserId' : actionType === 'assigned' ? 'assignedId' : 'holderId';
 
   const handleSearch = useDebouncedCallback(async (value: string) => {
     if (value.length < 1) {
@@ -65,8 +70,9 @@ export function ItemActionDialog({
         results = chars.map((c) => ({ id: c.id, label: c.name, extra: c.class }));
       }
       setOptions(results);
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.log('Failed to search:', error);
+      setOptions([]);
     }
   }, 300);
 
@@ -74,7 +80,7 @@ export function ItemActionDialog({
     const value = e.target.value;
     setSearchTerm(value);
     setSelectedId(null);
-    setError('');
+    setFieldErrors({});
     handleSearch(value);
   };
 
@@ -84,75 +90,98 @@ export function ItemActionDialog({
     setSearchTerm(options.find((o) => o.id === id)?.label || '');
   };
 
-  const resetState = () => {
+  const resetForm = () => {
     setSearchTerm('');
     setOptions([]);
     setSelectedId(null);
-    setError('');
+    setFieldErrors({});
   };
 
   const handleConfirm = () => {
     if (selectedId === null) {
-      setError('Please select a valid option');
+      setFieldErrors({
+        [errorFieldName]: isOwner ? ['Please select a user.'] : ['Please select a character.'],
+      });
       return;
     }
     if (!item) return;
 
-    // Определяем, какую мутацию вызывать
     if (isOwner) {
       ownerMutation.mutate(
         { id: item.id, userId: selectedId },
         {
           onSuccess: (data) => {
-            if (data.success) {
-              onOpenChange(false);
-              resetState();
-              onSuccess?.();
-            } else {
-              setError(data.message || 'Update failed');
+            if (!data.success) {
+              if (data.errors) {
+                setFieldErrors(data.errors);
+              } else {
+                toast.error(data.message);
+              }
+
+              return;
             }
+
+            toast.success(data.message);
+            onOpenChange(false);
+            resetForm();
+            onSuccess?.();
           },
-          onError: () => setError('Update failed'),
         }
       );
-    } else if (actionType === 'assigned') {
+      return;
+    }
+
+    if (actionType === 'assigned') {
       assignedMutation.mutate(
         { id: item.id, characterId: selectedId },
         {
           onSuccess: (data) => {
-            if (data.success) {
-              onOpenChange(false);
-              resetState();
-              onSuccess?.();
-            } else {
-              setError(data.message || 'Update failed');
+            if (!data.success) {
+              if (data.errors) {
+                setFieldErrors(data.errors);
+              } else {
+                toast.error(data.message);
+              }
+
+              return;
             }
+
+            toast.success(data.message);
+            onOpenChange(false);
+            resetForm();
+            onSuccess?.();
           },
-          onError: () => setError('Update failed'),
         }
       );
-    } else {
-      holderMutation.mutate(
-        { id: item.id, characterId: selectedId },
-        {
-          onSuccess: (data) => {
-            if (data.success) {
-              onOpenChange(false);
-              resetState();
-              onSuccess?.();
-            } else {
-              setError(data.message || 'Update failed');
-            }
-          },
-          onError: () => setError('Update failed'),
-        }
-      );
+      return;
     }
+
+    holderMutation.mutate(
+      { id: item.id, characterId: selectedId },
+      {
+        onSuccess: (data) => {
+          if (!data.success) {
+            if (data.errors) {
+              setFieldErrors(data.errors);
+            } else {
+              toast.error(data.message);
+            }
+
+            return;
+          }
+
+          toast.success(data.message);
+          onOpenChange(false);
+          resetForm();
+          onSuccess?.();
+        },
+      }
+    );
   };
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
-      resetState();
+      resetForm();
     }
     onOpenChange(newOpen);
   };
@@ -199,7 +228,9 @@ export function ItemActionDialog({
                 </div>
               )}
             </div>
-            {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
+            {fieldErrors[errorFieldName]?.[0] && (
+              <p className="mt-1 text-sm text-red-500">{fieldErrors[errorFieldName][0]}</p>
+            )}
           </div>
         </div>
         <DialogFooter className="mt-4 pt-4 border-t">

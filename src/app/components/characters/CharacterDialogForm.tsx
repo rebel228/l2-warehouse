@@ -13,7 +13,6 @@ import { Label } from '@/app/components/ui/label';
 import { useDebouncedCallback } from 'use-debounce';
 import { useState } from 'react';
 import { CharacterFormDialogProps } from '@/lib/types/DialogWindow';
-import { addCharacter, State } from '@/app/actions/characters';
 import { getUsers } from '@/app/actions/users';
 import {
   Select,
@@ -24,16 +23,16 @@ import {
   SelectValue,
 } from '../ui/select';
 import { CHARACTER_CLASSES } from '@/lib/constants/charecterClasses';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useUpdateCharacter } from '@/lib/hooks/useCharacters';
+import { useAddCharacter, useUpdateCharacter } from '@/lib/hooks/useCharacters';
+import { CharacterFieldErrors } from '@/lib/types/mutations-results';
+import { toast } from 'sonner';
 
 export function CharacterDialogForm({
   open,
   onOpenChange,
   characterToEdit,
 }: CharacterFormDialogProps) {
-  const [fieldErrors, setFieldErrors] = useState<State['errors']>({});
-  const queryClient = useQueryClient();
+  const [fieldErrors, setFieldErrors] = useState<CharacterFieldErrors>({});
 
   const [name, setName] = useState(characterToEdit?.name ?? '');
   const [characterClass, setCharacterClass] = useState(characterToEdit?.class ?? '');
@@ -43,23 +42,8 @@ export function CharacterDialogForm({
   const [selectedOwnerId, setSelectedOwnerId] = useState(String(characterToEdit?.userId ?? ''));
   const [ownerError, setOwnerError] = useState<string>('');
 
+  const addMutation = useAddCharacter();
   const updateMutation = useUpdateCharacter();
-
-  const addMutation = useMutation({
-    mutationFn: (formData: FormData) => addCharacter(formData),
-    onSuccess: (data) => {
-      if (!data.success) {
-        setFieldErrors(data.errors || {});
-        return;
-      }
-      queryClient.invalidateQueries({ queryKey: ['characters'] });
-      onOpenChange(false);
-      resetForm();
-    },
-    onError: (error) => {
-      console.error('Mutation error:', error);
-    },
-  });
 
   const resetForm = () => {
     setName('');
@@ -82,8 +66,6 @@ export function CharacterDialogForm({
     if (value.length >= 1) {
       const result = await getUsers(value);
       setUserList(result);
-    } else {
-      setUserList([]);
     }
   }, 300);
 
@@ -104,6 +86,9 @@ export function CharacterDialogForm({
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    setFieldErrors({});
+    setOwnerError('');
+
     if (searchTerm.trim().length > 0 && !selectedOwnerId) {
       setOwnerError('Not a valid user');
       return;
@@ -119,23 +104,42 @@ export function CharacterDialogForm({
         { id: characterToEdit.id, formData },
         {
           onSuccess: (data) => {
-            if (data.success) {
-              queryClient.invalidateQueries({ queryKey: ['characters'] });
-              onOpenChange(false);
-              resetForm();
-            } else {
-              setFieldErrors(data.errors || {});
+            if (!data.success) {
+              if (data.errors) {
+                setFieldErrors(data.errors ?? {});
+              } else toast.error(data.message);
+
+              return;
             }
+
+            toast.success(data.message);
+            onOpenChange(false);
+            resetForm();
           },
         }
       );
-    } else {
-      addMutation.mutate(formData);
+      return;
     }
+
+    addMutation.mutate(formData, {
+      onSuccess: (data) => {
+        if (!data.success) {
+          if (data.errors) {
+            setFieldErrors(data.errors ?? {});
+          } else toast.error(data.message);
+
+          return;
+        }
+
+        toast.success(data.message);
+        onOpenChange(false);
+        resetForm();
+      },
+    });
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{characterToEdit ? 'Edit Character' : 'Add New Character'}</DialogTitle>

@@ -19,20 +19,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import { addItem, State } from '@/app/actions/items';
 import { useState } from 'react';
 import { ItemDialogFormProps } from '@/lib/types/DialogWindow';
 import { useDebouncedCallback } from 'use-debounce';
 import { getUsers } from '@/app/actions/users';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { searchCharacters } from '@/app/actions/characters';
-import { useUpdateItem } from '@/lib/hooks/useItems';
+import { useAddItem, useUpdateItem } from '@/lib/hooks/useItems';
+import { ItemFieldErrors } from '@/lib/types/mutations-results';
+import { toast } from 'sonner';
 
 export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFormProps) {
   const grades = GRADES.map((value) => ({ value, label: value }));
   const itemTypes = ITEM_TYPES.map((value) => ({ value, label: value }));
-  const queryClient = useQueryClient();
-  const [fieldErrors, setFieldErrors] = useState<State['errors']>({});
+  const [fieldErrors, setFieldErrors] = useState<ItemFieldErrors>({});
 
   const [name, setName] = useState(itemToEdit?.name ?? '');
   const [grade, setGrade] = useState(itemToEdit?.grade ?? '');
@@ -54,45 +53,15 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
   const [selectedAssignedId, setSelectedAssignedId] = useState(
     String(itemToEdit?.assignedId ?? '')
   );
-  const [AssignedError, setAssignedError] = useState<string>('');
+  const [assignedError, setAssignedError] = useState<string>('');
 
   const [holderSearchTerm, setHolderSearchTerm] = useState(itemToEdit?.holderChar?.name ?? '');
   const [holderList, setHolderList] = useState<{ id: number; name: string; class: string }[]>([]);
   const [selectedHolderId, setSelectedHolderId] = useState(String(itemToEdit?.holderId ?? ''));
-  const [HolderError, setHolderError] = useState<string>('');
+  const [holderError, setHolderError] = useState<string>('');
 
+  const addMutation = useAddItem();
   const updateMutation = useUpdateItem();
-
-  const addMutation = useMutation({
-    mutationFn: (formData: FormData) => addItem(formData),
-    onSuccess: (data) => {
-      if (!data.success) {
-        setFieldErrors(data.errors || {});
-        return;
-      }
-      queryClient.invalidateQueries({ queryKey: ['items'] });
-      onOpenChange(false);
-      setFieldErrors({});
-
-      setSearchTerm('');
-      setSelectedOwnerId('');
-      setUserList([]);
-      setOwnerError('');
-
-      setAssignedSearchTerm('');
-      setSelectedAssignedId('');
-      setAssignedList([]);
-      setAssignedError('');
-
-      setHolderSearchTerm('');
-      setSelectedHolderId('');
-      setHolderList([]);
-      setHolderError('');
-    },
-    onError: (error) => {
-      console.error('Mutation error:', error);
-    },
-  });
 
   const resetForm = () => {
     setName('');
@@ -193,6 +162,11 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    setFieldErrors({});
+    setOwnerError('');
+    setAssignedError('');
+    setHolderError('');
+
     if (searchTerm.trim().length > 0 && !selectedOwnerId) {
       setOwnerError('Not a valid user');
       return;
@@ -224,17 +198,40 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
         { id: itemToEdit.id, formData },
         {
           onSuccess: (data) => {
-            if (data.success) {
-              queryClient.invalidateQueries({ queryKey: ['items'] });
-              onOpenChange(false);
-              resetForm();
-            } else {
-              setFieldErrors(data.errors || {});
+            if (!data.success) {
+              if (data.errors) {
+                setFieldErrors(data.errors);
+              } else toast.error(data.message);
+
+              return;
             }
+
+            toast.success(data.message);
+            onOpenChange(false);
+            resetForm();
           },
         }
       );
-    } else addMutation.mutate(formData);
+      return;
+    }
+
+    addMutation.mutate(formData, {
+      onSuccess: (data) => {
+        if (!data.success) {
+          if (data.errors) {
+            setFieldErrors(data.errors);
+          } else {
+            toast.error(data.message);
+          }
+
+          return;
+        }
+
+        toast.success(data.message ?? 'Item added successfully');
+        onOpenChange(false);
+        resetForm();
+      },
+    });
   };
 
   return (
@@ -438,8 +435,8 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
                   aria-atomic="true"
                   className="min-h-[2rem]"
                 >
-                  {AssignedError && <p className="mt-0.5 text-sm text-red-500">{AssignedError}</p>}
-                  {!AssignedError &&
+                  {assignedError && <p className="mt-0.5 text-sm text-red-500">{assignedError}</p>}
+                  {!assignedError &&
                     fieldErrors?.assignedId?.map((error: string) => (
                       <p className="mt-0.5 text-sm text-red-500" key={error}>
                         {error}
@@ -478,8 +475,8 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
                   aria-atomic="true"
                   className="min-h-[2rem]"
                 >
-                  {HolderError && <p className="mt-0.5 text-sm text-red-500">{HolderError}</p>}
-                  {!HolderError &&
+                  {holderError && <p className="mt-0.5 text-sm text-red-500">{holderError}</p>}
+                  {!holderError &&
                     fieldErrors?.holderId?.map((error: string) => (
                       <p className="mt-0.5 text-sm text-red-500" key={error}>
                         {error}
