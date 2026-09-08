@@ -35,6 +35,6 @@ export function getDeleteDescription(character: CharacterWithRelations): string 
   return assignedCount > 0 || heldCount > 0
     ? `${assignedCount > 0 ? `All ${assignedCount} assigned item(s) will be unassigned.` : ''}${
         assignedCount > 0 && heldCount > 0 ? ' ' : ''
-      }${heldCount > 0 ? `All ${heldCount} currently possesed item(s) will be moved to the bank.` : ''}`
+      }${heldCount > 0 ? `All ${heldCount} currently possessed item(s) will be moved to the bank.` : ''}`
     : `Are you sure you want to delete "${character.name}"? This action cannot be undone.`;
 }
