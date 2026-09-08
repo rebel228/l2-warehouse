@@ -104,7 +104,6 @@ export default function ItemTable({ initialItems }: ItemTableProps) {
         onOpenChange={setActionDialogOpen}
         item={actionItem}
         actionType={actionType}
-        onSuccess={() => {}}
       />
     </div>
   );
