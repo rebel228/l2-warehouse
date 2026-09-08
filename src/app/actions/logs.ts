@@ -69,7 +69,6 @@ export async function getLogs(): Promise<LogEntry[]> {
     return {
       id: event.id,
       type: event.type,
-      itemName: event.snapshot.name,
       from,
       to,
       changedBy: event.changedByUser?.username ?? 'Unknown',

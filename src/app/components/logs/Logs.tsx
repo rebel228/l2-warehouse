@@ -56,7 +56,7 @@ export default function Logs() {
                         minute: '2-digit',
                       })}
                     </td>
-                    <td className="px-4 py-2 font-medium">{log.itemName}</td>
+                    <td className="px-4 py-2 font-medium">`{log.snapshot.name}`</td>
                     <td className="px-4 py-2 text-sm">{getActionText(log)}</td>
                     <td className="px-4 py-2 text-sm">{'Unknown'}</td>
                     {/* Change changyBy later, after authorization */}
