@@ -15,6 +15,7 @@ import { useDeleteCharacter } from '@/lib/hooks/useCharacters';
 import { useState } from 'react';
 import { CharacterWithRelations } from '@/app/actions/characters';
 import { ConfirmDialog } from '../shared/AlertDialog';
+import { toast } from 'sonner';
 
 export default function CharacterCard({ character, onEdit }: CharacterCardProps) {
   const itemList = buildItemList(character);
@@ -36,7 +37,14 @@ export default function CharacterCard({ character, onEdit }: CharacterCardProps)
   const handleConfirmDelete = () => {
     if (characterToDelete) {
       deleteMutation.mutate(characterToDelete.id, {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          if (!data.success) {
+            toast.error(data.message);
+            return;
+          }
+
+          toast.success(data.message);
+
           setDeleteDialogOpen(false);
           setCharacterToDelete(null);
         },
