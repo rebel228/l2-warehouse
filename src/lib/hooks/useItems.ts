@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  addItem,
   deleteItem,
   getItems,
   ItemWithRelations,
@@ -18,12 +19,32 @@ export function useItems(initialData?: ItemWithRelations[]) {
   });
 }
 
+export function useAddItem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: addItem,
+
+    onSuccess: (data) => {
+      if (data.success) {
+        queryClient.invalidateQueries({
+          queryKey: ['items'],
+        });
+      }
+    },
+  });
+}
+
 export function useDeleteItem() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteItem,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
+    onSuccess: (data) => {
+      if (data.success) {
+        queryClient.invalidateQueries({
+          queryKey: ['items'],
+        });
+      }
     },
   });
 }
@@ -45,7 +66,13 @@ export function useUpdateItemOwner() {
   return useMutation({
     mutationFn: ({ id, userId }: { id: number; userId: number | null }) =>
       updateItemOwner(id, userId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['items'] }),
+    onSuccess: (data) => {
+      if (data.success) {
+        queryClient.invalidateQueries({
+          queryKey: ['items'],
+        });
+      }
+    },
   });
 }
 
@@ -54,7 +81,13 @@ export function useUpdateItemAssigned() {
   return useMutation({
     mutationFn: ({ id, characterId }: { id: number; characterId: number | null }) =>
       updateItemAssigned(id, characterId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['items'] }),
+    onSuccess: (data) => {
+      if (data.success) {
+        queryClient.invalidateQueries({
+          queryKey: ['items'],
+        });
+      }
+    },
   });
 }
 
@@ -63,6 +96,12 @@ export function useUpdateItemHolder() {
   return useMutation({
     mutationFn: ({ id, characterId }: { id: number; characterId: number | null }) =>
       updateItemHolder(id, characterId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['items'] }),
+    onSuccess: (data) => {
+      if (data.success) {
+        queryClient.invalidateQueries({
+          queryKey: ['items'],
+        });
+      }
+    },
   });
 }

@@ -7,7 +7,7 @@ then
   echo "-"
   echo "🚨 Wrong commit message! 😕"
   echo "The commit message must have this format:"
-  echo "<type> <subject>"
+  echo "<type>: <subject>"
   echo "Allowed types: feat, fix, refactor, chore, docs, style, perf, test, ci, build, revert"
   echo "Example: feat: add login button"
   echo "-"
