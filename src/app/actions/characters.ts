@@ -39,7 +39,7 @@ export async function addCharacter(
 
     return { message: 'Character added successfully', success: true };
   } catch (error) {
-    console.error('addCharacter failed', error);
+    console.log('addCharacter failed', error);
     return {
       success: false,
       message: 'Failed to create character. Please try again.',
@@ -91,7 +91,7 @@ export async function updateCharacter(
     revalidatePath('/dashboard/characters');
     return { success: true, message: 'Character updated successfully.' };
   } catch (error) {
-    console.error('updateCharacter failed', error);
+    console.log('updateCharacter failed', error);
     return { success: false, message: 'Failed to update character. Please try again.' };
   }
 }

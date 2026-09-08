@@ -71,7 +71,7 @@ export function ItemActionDialog({
       }
       setOptions(results);
     } catch (error) {
-      console.error('Failed to search:', error);
+      console.log('Failed to search:', error);
       setOptions([]);
     }
   }, 300);

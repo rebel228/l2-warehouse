@@ -339,7 +339,7 @@ export async function updateItemAssigned(
     return { success: true, message: 'Item reassigned successfully' };
   } catch (error) {
     console.log('updateItemAssigned failed', error);
-    return { success: false, message: 'Failed to reassign the item. Please ty again later.' };
+    return { success: false, message: 'Failed to reassign the item. Please try again later.' };
   }
 }
 
@@ -390,6 +390,6 @@ export async function updateItemHolder(
     return { success: true, message: 'Item transferred successfully' };
   } catch (error) {
     console.log('updateItemHolder failed', error);
-    return { success: false, message: 'Failed to transfer item. Please ty again later.' };
+    return { success: false, message: 'Failed to transfer item. Please try again later.' };
   }
 }
