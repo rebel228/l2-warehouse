@@ -256,12 +256,21 @@ export async function updateItem(
   }
 }
 
-export async function updateItemOwner(id: number, userId: number | null) {
+export async function updateItemOwner(
+  id: number,
+  userId: number | null
+): Promise<ActionResult<ItemFieldErrors>> {
   try {
     if (userId !== null) {
       const userExists = await db.select().from(users).where(eq(users.id, userId)).limit(1);
       if (!userExists.length) {
-        return { success: false, message: 'User not found.' };
+        return {
+          success: false,
+          message: 'Please correct the highlighted fields.',
+          errors: {
+            ownerUserId: ['User not found.'],
+          },
+        };
       }
     }
 
@@ -274,7 +283,10 @@ export async function updateItemOwner(id: number, userId: number | null) {
   }
 }
 
-export async function updateItemAssigned(id: number, characterId: number | null) {
+export async function updateItemAssigned(
+  id: number,
+  characterId: number | null
+): Promise<ActionResult<ItemFieldErrors>> {
   const userId = getCurrentUserId();
 
   try {
@@ -285,7 +297,13 @@ export async function updateItemAssigned(id: number, characterId: number | null)
         .where(eq(characters.id, characterId))
         .limit(1);
       if (!charExists.length) {
-        return { success: false, message: 'Character not found.' };
+        return {
+          success: false,
+          message: 'Please correct the highlighted fields.',
+          errors: {
+            assignedId: ['Character not found.'],
+          },
+        };
       }
     }
     const item = await db.select().from(items).where(eq(items.id, id)).limit(1);
@@ -314,7 +332,10 @@ export async function updateItemAssigned(id: number, characterId: number | null)
   }
 }
 
-export async function updateItemHolder(id: number, characterId: number | null) {
+export async function updateItemHolder(
+  id: number,
+  characterId: number | null
+): Promise<ActionResult<ItemFieldErrors>> {
   const userId = getCurrentUserId();
 
   try {
@@ -325,7 +346,13 @@ export async function updateItemHolder(id: number, characterId: number | null) {
         .where(eq(characters.id, characterId))
         .limit(1);
       if (!charExists.length) {
-        return { success: false, message: 'Character not found.' };
+        return {
+          success: false,
+          message: 'Please correct the highlighted fields.',
+          errors: {
+            holderId: ['Character not found.'],
+          },
+        };
       }
     }
     const item = await db.select().from(items).where(eq(items.id, id)).limit(1);

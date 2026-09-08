@@ -25,6 +25,7 @@ import {
 import { CHARACTER_CLASSES } from '@/lib/constants/charecterClasses';
 import { useAddCharacter, useUpdateCharacter } from '@/lib/hooks/useCharacters';
 import { CharacterFieldErrors } from '@/lib/types/mutations-results';
+import { toast } from 'sonner';
 
 export function CharacterDialogForm({
   open,
@@ -104,10 +105,14 @@ export function CharacterDialogForm({
         {
           onSuccess: (data) => {
             if (!data.success) {
-              setFieldErrors(data.errors ?? {});
+              if (data.errors) {
+                setFieldErrors(data.errors ?? {});
+              } else toast.error(data.message);
+
               return;
             }
 
+            toast.success(data.message);
             onOpenChange(false);
             resetForm();
           },
@@ -119,10 +124,14 @@ export function CharacterDialogForm({
     addMutation.mutate(formData, {
       onSuccess: (data) => {
         if (!data.success) {
-          setFieldErrors(data.errors ?? {});
+          if (data.errors) {
+            setFieldErrors(data.errors ?? {});
+          } else toast.error(data.message);
+
           return;
         }
 
+        toast.success(data.message);
         onOpenChange(false);
         resetForm();
       },

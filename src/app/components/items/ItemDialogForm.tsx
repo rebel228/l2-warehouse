@@ -26,6 +26,7 @@ import { getUsers } from '@/app/actions/users';
 import { searchCharacters } from '@/app/actions/characters';
 import { useAddItem, useUpdateItem } from '@/lib/hooks/useItems';
 import { ItemFieldErrors } from '@/lib/types/mutations-results';
+import { toast } from 'sonner';
 
 export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFormProps) {
   const grades = GRADES.map((value) => ({ value, label: value }));
@@ -198,10 +199,14 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
         {
           onSuccess: (data) => {
             if (!data.success) {
-              setFieldErrors(data.errors ?? {});
+              if (data.errors) {
+                setFieldErrors(data.errors);
+              } else toast.error(data.message);
+
               return;
             }
 
+            toast.success(data.message);
             onOpenChange(false);
             resetForm();
           },
@@ -212,10 +217,19 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
 
     addMutation.mutate(formData, {
       onSuccess: (data) => {
-        if (data.success) {
-          onOpenChange(false);
-          resetForm();
-        } else setFieldErrors(data.errors ?? {});
+        if (!data.success) {
+          if (data.errors) {
+            setFieldErrors(data.errors);
+          } else {
+            toast.error(data.message);
+          }
+
+          return;
+        }
+
+        toast.success(data.message ?? 'Item added successfully');
+        onOpenChange(false);
+        resetForm();
       },
     });
   };
