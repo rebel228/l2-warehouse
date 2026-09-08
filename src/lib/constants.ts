@@ -1,6 +1,6 @@
 export const ITEM_GRID_COLS = 'grid-cols-[1fr_0.5fr_1fr_1fr_0.7fr_1fr_1fr]';
 export const GRADES = ['NG', 'D', 'C', 'B', 'A', 'S'] as const;
-export const ITEM_TYPES = ['Weapon', 'Armor', 'Accessory'];
+export const ITEM_TYPES = ['Weapon', 'Armor', 'Accessory'] as const;
 export const DEFAULT_PAGE_SIZE = 20;
 export const CHARACTER_CLASSES = [
   'Gladiator',
