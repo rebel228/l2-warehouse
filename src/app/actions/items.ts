@@ -274,6 +274,16 @@ export async function updateItemOwner(
       }
     }
 
+    const item = await db.select().from(items).where(eq(items.id, id)).limit(1);
+    if (!item.length) return { success: false, message: 'Item not found.' };
+
+    if (item[0].ownerUserId === userId) {
+      return {
+        success: true,
+        message: 'Item is already owned by this user.',
+      };
+    }
+
     await db.update(items).set({ ownerUserId: userId }).where(eq(items.id, id));
     revalidatePath('/dashboard/items');
     return { success: true, message: 'Item owner changed successfully' };
