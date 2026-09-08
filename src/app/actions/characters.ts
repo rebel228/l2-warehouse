@@ -83,14 +83,17 @@ export async function updateCharacter(
       }
     }
 
-    await db
+    const [updatedCharacter] = await db
       .update(characters)
       .set({
         name,
         class: characterClass,
         userId,
       })
-      .where(eq(characters.id, id));
+      .where(eq(characters.id, id))
+      .returning();
+
+    if (!updatedCharacter) return { success: false, message: 'Character not found.' };
 
     revalidatePath('/dashboard/characters');
     return { success: true, message: 'Character updated successfully.' };
@@ -162,30 +165,25 @@ export async function deleteCharacter(id: number): Promise<ActionResult> {
   try {
     const userId = getCurrentUserId();
 
-    const relatedItems = await db
-      .select()
-      .from(items)
-      .where(or(eq(items.assignedId, id), eq(items.holderId, id)));
-
-    if (relatedItems.length === 0) {
-      await db.delete(characters).where(eq(characters.id, id));
-      revalidatePath('/dashboard/characters');
-      revalidatePath('/dashboard/items');
-      return {
-        success: true,
-        message: 'Character deleted successfully.',
-      };
-    }
-
     await db.transaction(async (tx) => {
       const [character] = await tx
         .select({ name: characters.name })
         .from(characters)
         .where(eq(characters.id, id))
         .limit(1);
-      if (!character) throw new Error('Character not found.');
 
+      if (!character) throw new Error('NOT_FOUND');
       const characterName = character.name;
+
+      const relatedItems = await tx
+        .select()
+        .from(items)
+        .where(or(eq(items.assignedId, id), eq(items.holderId, id)));
+
+      if (relatedItems.length === 0) {
+        await tx.delete(characters).where(eq(characters.id, id));
+        return;
+      }
 
       for (const item of relatedItems) {
         const assignedChanged = item.assignedId === id;
@@ -264,6 +262,9 @@ export async function deleteCharacter(id: number): Promise<ActionResult> {
     };
   } catch (error) {
     console.error('deleteCharacter failed', error);
+    if (error instanceof Error && error.message === 'NOT_FOUND') {
+      return { success: false, message: 'Character not found.' };
+    }
     return { success: false, message: 'Failed to delete character. Please try again.' };
   }
 }
