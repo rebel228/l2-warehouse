@@ -1,6 +1,6 @@
 import { defineRelations } from 'drizzle-orm';
 import { index, integer, jsonb, pgEnum, snakeCase, timestamp, varchar } from 'drizzle-orm/pg-core';
-import { GRADES } from '../constants/itemValues';
+import { GRADES } from '../constants';
 
 // ==============================================
 // TABLES (camelCase keys → snake_case columns)

@@ -5,8 +5,8 @@ import { Plus, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ItemDialogForm } from '../items/ItemDialogForm';
-import { CharacterDialogForm } from '../characters/CharacterDialogForm';
 import { useState } from 'react';
+import { CharacterDialogForm } from '../characters/CharacterDialogForm';
 
 const navLinks = [
   { label: 'Items', href: '/dashboard/items' },

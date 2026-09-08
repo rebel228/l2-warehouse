@@ -2,7 +2,7 @@
 import { ContextMenuWrapper } from '../shared/ContextMenu';
 import { useState } from 'react';
 import { ItemRowProps, typeIcon } from '@/lib/types/dashboard';
-import { ITEM_GRID_COLS } from '@/lib/constants/grid';
+import { ITEM_GRID_COLS } from '@/lib/constants';
 
 export function ItemRow({ item, actions }: ItemRowProps) {
   const [isSelected, setIsSelected] = useState(false);

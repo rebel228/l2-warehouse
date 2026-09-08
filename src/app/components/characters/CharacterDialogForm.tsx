@@ -22,10 +22,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import { CHARACTER_CLASSES } from '@/lib/constants/charecterClasses';
 import { useAddCharacter, useUpdateCharacter } from '@/lib/hooks/useCharacters';
 import { CharacterFieldErrors } from '@/lib/types/mutations-results';
 import { toast } from 'sonner';
+import { CHARACTER_CLASSES } from '@/lib/constants';
 
 export function CharacterDialogForm({
   open,
