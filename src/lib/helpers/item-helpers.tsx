@@ -1,6 +1,7 @@
 import { Edit, Trash2, Users, RotateCcw, MoveRight } from 'lucide-react';
 import { ItemWithRelations } from '@/app/actions/items';
 import { MenuAction } from '../types/context-menu';
+import { Item, ItemEventSnapshot } from '../db/schema';
 
 export function getItemStatus(
   assignedId: number | null | undefined,
@@ -52,3 +53,18 @@ export const buildMenu = (
     variant: 'destructive',
   },
 ];
+
+export function createItemSnapshot(item: Item): ItemEventSnapshot {
+  return {
+    name: item.name,
+    type: item.type,
+    grade: item.grade,
+    enchantLevel: item.enchantLevel,
+    imageUrl: item.imageUrl,
+    status: item.status,
+    ownerUserId: item.ownerUserId,
+    ownerClanId: item.ownerClanId,
+    assignedId: item.assignedId,
+    holderId: item.holderId,
+  };
+}

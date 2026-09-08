@@ -3,9 +3,9 @@
 import { revalidatePath } from 'next/cache';
 import { db } from '../../lib/db';
 import { addItemSchema } from '../../lib/validations/item.schema';
-import { items, users, characters, transfers, reassignments } from '@/lib/db/schema';
+import { items, users, characters, itemEvents } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { getItemStatus } from '@/lib/helpers/item-helpers';
+import { createItemSnapshot, getItemStatus } from '@/lib/helpers/item-helpers';
 import { ActionResult, ItemFieldErrors } from '@/lib/types/mutations-results';
 
 const getCurrentUserId = () => 1; // temporary, change to user after adding auth
@@ -73,15 +73,27 @@ export async function addItem(formData: FormData): Promise<ActionResult<ItemFiel
 
     const status = getItemStatus(assignedId, holderId);
 
-    await db.insert(items).values({
-      name,
-      grade,
-      type,
-      enchantLevel: enchant,
-      ownerUserId,
-      assignedId,
-      holderId,
-      status,
+    await db.transaction(async (tx) => {
+      const [item] = await tx
+        .insert(items)
+        .values({
+          name,
+          grade,
+          type,
+          enchantLevel: enchant,
+          ownerUserId,
+          assignedId,
+          holderId,
+          status,
+        })
+        .returning();
+
+      await tx.insert(itemEvents).values({
+        itemId: item.id,
+        type: 'item_created',
+        changedByUserId: getCurrentUserId(),
+        snapshot: createItemSnapshot(item),
+      });
     });
     revalidatePath('/dashboard/items');
     return { success: true, message: 'Item added successfully' };
@@ -126,10 +138,31 @@ export async function getItems() {
 }
 
 export async function deleteItem(id: number): Promise<ActionResult> {
+  const userId = getCurrentUserId();
+
   try {
-    await db.delete(items).where(eq(items.id, id));
+    const item = await db.select().from(items).where(eq(items.id, id)).limit(1);
+    if (!item.length) {
+      return {
+        success: false,
+        message: 'Item not found.',
+      };
+    }
+
+    await db.transaction(async (tx) => {
+      await tx.insert(itemEvents).values({
+        itemId: item[0].id,
+        type: 'item_deleted',
+        changedByUserId: userId,
+        snapshot: createItemSnapshot(item[0]),
+      });
+      await tx.delete(items).where(eq(items.id, id));
+    });
     revalidatePath('/dashboard/items');
-    return { success: true, message: 'Item deleted successfully' };
+    return {
+      success: true,
+      message: 'Item deleted successfully',
+    };
   } catch (error) {
     console.log('deleteItem failed', error);
     return {
@@ -166,8 +199,12 @@ export async function updateItem(
     if (!currentItem.length) return { success: false, message: 'Item not found.' };
 
     const { name, grade, type, enchant, ownerUserId, assignedId, holderId } = validatedFields.data;
+
+    const oldOwnerUserId = currentItem[0].ownerUserId;
     const oldAssignedId = currentItem[0].assignedId;
     const oldHolderId = currentItem[0].holderId;
+
+    const ownerChanged = oldOwnerUserId !== ownerUserId;
     const assignedChanged = oldAssignedId !== assignedId;
     const holderChanged = oldHolderId !== holderId;
 
@@ -215,7 +252,7 @@ export async function updateItem(
     const status = getItemStatus(assignedId, holderId);
 
     await db.transaction(async (tx) => {
-      await tx
+      const [updatedItem] = await tx
         .update(items)
         .set({
           name,
@@ -225,25 +262,42 @@ export async function updateItem(
           ownerUserId,
           assignedId,
           holderId,
-          status: status,
+          status,
           updatedAt: new Date(),
         })
-        .where(eq(items.id, id));
+        .where(eq(items.id, id))
+        .returning();
+
+      if (ownerChanged) {
+        await tx.insert(itemEvents).values({
+          itemId: id,
+          type: 'owner_change',
+          fromOwnerUserId: oldOwnerUserId,
+          toOwnerUserId: ownerUserId,
+          changedByUserId: userId,
+          snapshot: createItemSnapshot(updatedItem),
+        });
+      }
 
       if (assignedChanged) {
-        await tx.insert(reassignments).values({
+        await tx.insert(itemEvents).values({
           itemId: id,
+          type: 'reassignment',
           fromAssignedId: oldAssignedId,
           toAssignedId: assignedId,
           changedByUserId: userId,
+          snapshot: createItemSnapshot(updatedItem),
         });
       }
+
       if (holderChanged) {
-        await tx.insert(transfers).values({
+        await tx.insert(itemEvents).values({
           itemId: id,
+          type: 'transfer',
           fromHolderId: oldHolderId,
           toHolderId: holderId,
           changedByUserId: userId,
+          snapshot: createItemSnapshot(updatedItem),
         });
       }
     });
@@ -283,8 +337,25 @@ export async function updateItemOwner(
         message: 'Item is already owned by this user.',
       };
     }
+    await db.transaction(async (tx) => {
+      const [updatedItem] = await tx
+        .update(items)
+        .set({
+          ownerUserId: userId,
+          updatedAt: new Date(),
+        })
+        .where(eq(items.id, id))
+        .returning();
 
-    await db.update(items).set({ ownerUserId: userId }).where(eq(items.id, id));
+      await tx.insert(itemEvents).values({
+        itemId: id,
+        type: 'owner_change',
+        fromOwnerUserId: item[0].ownerUserId,
+        toOwnerUserId: userId,
+        changedByUserId: getCurrentUserId(),
+        snapshot: createItemSnapshot(updatedItem),
+      });
+    });
     revalidatePath('/dashboard/items');
     return { success: true, message: 'Item owner changed successfully' };
   } catch (error) {
@@ -326,12 +397,23 @@ export async function updateItemAssigned(
     const currentHolderId = item[0]?.holderId ?? null;
     const status = getItemStatus(characterId, currentHolderId);
     await db.transaction(async (tx) => {
-      await tx.update(items).set({ assignedId: characterId, status }).where(eq(items.id, id));
-      await tx.insert(reassignments).values({
+      const [updatedItem] = await tx
+        .update(items)
+        .set({
+          assignedId: characterId,
+          status,
+          updatedAt: new Date(),
+        })
+        .where(eq(items.id, id))
+        .returning();
+
+      await tx.insert(itemEvents).values({
         itemId: id,
+        type: 'reassignment',
         fromAssignedId: oldAssignedId,
         toAssignedId: characterId,
         changedByUserId: userId,
+        snapshot: createItemSnapshot(updatedItem),
       });
     });
 
@@ -377,12 +459,23 @@ export async function updateItemHolder(
     const status = getItemStatus(currentAssignedId, characterId);
 
     await db.transaction(async (tx) => {
-      await tx.update(items).set({ holderId: characterId, status }).where(eq(items.id, id));
-      await tx.insert(transfers).values({
+      const [updatedItem] = await tx
+        .update(items)
+        .set({
+          holderId: characterId,
+          status,
+          updatedAt: new Date(),
+        })
+        .where(eq(items.id, id))
+        .returning();
+
+      await tx.insert(itemEvents).values({
         itemId: id,
+        type: 'transfer',
         fromHolderId: oldHolderId,
         toHolderId: characterId,
         changedByUserId: userId,
+        snapshot: createItemSnapshot(updatedItem),
       });
     });
 
