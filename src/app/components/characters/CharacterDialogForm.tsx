@@ -23,7 +23,6 @@ import {
   SelectValue,
 } from '../ui/select';
 import { CHARACTER_CLASSES } from '@/lib/constants/charecterClasses';
-import { useQueryClient } from '@tanstack/react-query';
 import { useAddCharacter, useUpdateCharacter } from '@/lib/hooks/useCharacters';
 import { CharacterFieldErrors } from '@/lib/types/mutations-results';
 
@@ -33,7 +32,6 @@ export function CharacterDialogForm({
   characterToEdit,
 }: CharacterFormDialogProps) {
   const [fieldErrors, setFieldErrors] = useState<CharacterFieldErrors>({});
-  const queryClient = useQueryClient();
 
   const [name, setName] = useState(characterToEdit?.name ?? '');
   const [characterClass, setCharacterClass] = useState(characterToEdit?.class ?? '');
