@@ -1,7 +1,7 @@
 export type ActionResult<TErrors = undefined> =
   | {
       success: true;
-      message?: string;
+      message: string;
     }
   | {
       success: false;

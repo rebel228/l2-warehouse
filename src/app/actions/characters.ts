@@ -89,7 +89,7 @@ export async function updateCharacter(
       .where(eq(characters.id, id));
 
     revalidatePath('/dashboard/characters');
-    return { success: true };
+    return { success: true, message: 'Character updated successfully.' };
   } catch (error) {
     console.error('updateCharacter failed', error);
     return { success: false, message: 'Failed to update character. Please try again.' };

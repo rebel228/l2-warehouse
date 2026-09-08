@@ -310,7 +310,8 @@ export async function updateItemAssigned(
     if (!item.length) return { success: false, message: 'Item not found.' };
 
     const oldAssignedId = item[0].assignedId;
-    if (oldAssignedId === characterId) return { success: true };
+    if (oldAssignedId === characterId)
+      return { success: true, message: 'Item is already assigned to this character.' };
 
     const currentHolderId = item[0]?.holderId ?? null;
     const status = getItemStatus(characterId, currentHolderId);
@@ -359,7 +360,8 @@ export async function updateItemHolder(
     if (!item.length) return { success: false, message: 'Item not found.' };
 
     const oldHolderId = item[0].holderId;
-    if (oldHolderId === characterId) return { success: true };
+    if (oldHolderId === characterId)
+      return { success: true, message: 'Item is already transferred to this character.' };
 
     const currentAssignedId = item[0]?.assignedId ?? null;
     const status = getItemStatus(currentAssignedId, characterId);
