@@ -1,6 +1,5 @@
 'use client';
 import { ItemRow } from './ItemRow';
-import { ITEM_GRID_COLS } from '@/lib/constants/grid';
 import { buildMenu } from '@/lib/helpers/item-helpers';
 import { useDeleteItem, useItems } from '@/lib/hooks/useItems';
 import { ItemTableProps } from '@/lib/types/dashboard';
@@ -10,6 +9,7 @@ import { ItemWithRelations } from '@/app/actions/items';
 import { ItemDialogForm } from './ItemDialogForm';
 import { ItemActionDialog } from './ItemActionDialog';
 import { toast } from 'sonner';
+import { ITEM_GRID_COLS } from '@/lib/constants';
 
 const headers = ['Name', 'Grade', 'Type', 'Status', 'Owner', 'Assigned', 'Holder'];
 

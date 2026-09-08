@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { GRADES, ITEM_TYPES } from '../constants/itemValues';
+import { GRADES, ITEM_TYPES } from '../constants';
 
 export const addItemSchema = z.object({
   name: z.string().min(1, 'Name is required'),

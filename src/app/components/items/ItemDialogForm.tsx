@@ -10,7 +10,6 @@ import {
 import { Field, FieldGroup, FieldLabel } from '@/app/components/ui/field';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
-import { GRADES, ITEM_TYPES } from '@/lib/constants/itemValues';
 import {
   Select,
   SelectContent,
@@ -27,6 +26,7 @@ import { searchCharacters } from '@/app/actions/characters';
 import { useAddItem, useUpdateItem } from '@/lib/hooks/useItems';
 import { ItemFieldErrors } from '@/lib/types/mutations-results';
 import { toast } from 'sonner';
+import { GRADES, ITEM_TYPES } from '@/lib/constants';
 
 export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFormProps) {
   const grades = GRADES.map((value) => ({ value, label: value }));
