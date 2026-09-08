@@ -28,7 +28,7 @@ export function useAddItem() {
     onSuccess: (data) => {
       if (data.success) {
         queryClient.invalidateQueries({
-          queryKey: ['items'],
+          queryKey: ['items', 'logs'],
         });
       }
     },
@@ -42,7 +42,7 @@ export function useDeleteItem() {
     onSuccess: (data) => {
       if (data.success) {
         queryClient.invalidateQueries({
-          queryKey: ['items'],
+          queryKey: ['items', 'logs'],
         });
       }
     },
@@ -55,7 +55,7 @@ export function useUpdateItem() {
     mutationFn: ({ id, formData }: { id: number; formData: FormData }) => updateItem(id, formData),
     onSuccess: (data) => {
       if (data.success) {
-        queryClient.invalidateQueries({ queryKey: ['items'] });
+        queryClient.invalidateQueries({ queryKey: ['items', 'logs'] });
       }
     },
   });
@@ -69,7 +69,7 @@ export function useUpdateItemOwner() {
     onSuccess: (data) => {
       if (data.success) {
         queryClient.invalidateQueries({
-          queryKey: ['items'],
+          queryKey: ['items', 'logs'],
         });
       }
     },
@@ -84,7 +84,7 @@ export function useUpdateItemAssigned() {
     onSuccess: (data) => {
       if (data.success) {
         queryClient.invalidateQueries({
-          queryKey: ['items'],
+          queryKey: ['items', 'logs'],
         });
       }
     },
@@ -99,7 +99,7 @@ export function useUpdateItemHolder() {
     onSuccess: (data) => {
       if (data.success) {
         queryClient.invalidateQueries({
-          queryKey: ['items'],
+          queryKey: ['items', 'logs'],
         });
       }
     },
