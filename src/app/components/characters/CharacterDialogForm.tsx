@@ -105,28 +105,30 @@ export function CharacterDialogForm({
         { id: characterToEdit.id, formData },
         {
           onSuccess: (data) => {
-            if (data.success) {
-              queryClient.invalidateQueries({ queryKey: ['characters'] });
-              onOpenChange(false);
-              resetForm();
-            } else {
-              setFieldErrors(data.errors || {});
+            if (!data.success) {
+              setFieldErrors(data.errors ?? {});
+              return;
             }
+
+            onOpenChange(false);
+            resetForm();
           },
         }
       );
-    } else {
-      addMutation.mutate(formData, {
-        onSuccess: (data) => {
-          if (data.success) {
-            onOpenChange(false);
-            resetForm();
-          } else {
-            setFieldErrors(data.errors ?? {});
-          }
-        },
-      });
+      return;
     }
+
+    addMutation.mutate(formData, {
+      onSuccess: (data) => {
+        if (!data.success) {
+          setFieldErrors(data.errors ?? {});
+          return;
+        }
+
+        onOpenChange(false);
+        resetForm();
+      },
+    });
   };
 
   return (
