@@ -37,9 +37,3 @@ export type ItemGroup = {
   item: ItemWithRelations;
   type: 'assigned_in_place' | 'assigned_missing' | 'held_foreign';
 };
-
-export const typeIcon: Record<string, string> = {
-  Weapon: '⚔️',
-  Armor: '🛡️',
-  Accessory: '💍',
-};
