@@ -3,9 +3,13 @@
 import { revalidatePath } from 'next/cache';
 import { db } from '../../lib/db';
 import { addItemSchema } from '../../lib/validations/item.schema';
-import { items, users, characters, transfers, reassignments } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { getItemStatus } from '@/lib/helpers/item-helpers';
+import { items, users, characters, itemEvents } from '@/lib/db/schema';
+import { eq, inArray } from 'drizzle-orm';
+import {
+  createItemSnapshot,
+  getItemSnapshotRelations,
+  getItemStatus,
+} from '@/lib/helpers/item-helpers';
 import { ActionResult, ItemFieldErrors } from '@/lib/types/mutations-results';
 
 const getCurrentUserId = () => 1; // temporary, change to user after adding auth
@@ -32,56 +36,88 @@ export async function addItem(formData: FormData): Promise<ActionResult<ItemFiel
 
   try {
     const { name, grade, type, enchant, ownerUserId, assignedId, holderId } = validatedFields.data;
+    let ownerName: string | null = null;
+    let assignedName: string | null = null;
+    let holderName: string | null = null;
+
     if (ownerUserId != null) {
-      const userExists = await db.select().from(users).where(eq(users.id, ownerUserId)).limit(1);
-      if (!userExists.length) {
+      const user = await db.select().from(users).where(eq(users.id, ownerUserId)).limit(1);
+      if (!user.length) {
         return {
           success: false,
           message: 'Please correct the highlighted fields.',
           errors: { ownerUserId: ['User does not exist'] },
         };
       }
+      ownerName = user[0].username;
     }
-    if (assignedId != null) {
-      const charExists = await db
-        .select()
-        .from(characters)
-        .where(eq(characters.id, assignedId))
-        .limit(1);
-      if (!charExists.length) {
-        return {
-          success: false,
-          message: 'Please correct the highlighted fields.',
-          errors: { assignedId: ['Character does not exist'] },
-        };
-      }
+    const characterIds = [assignedId, holderId].filter((value): value is number => value != null);
+
+    const characterResult =
+      characterIds.length > 0
+        ? await db
+            .select({
+              id: characters.id,
+              name: characters.name,
+            })
+            .from(characters)
+            .where(inArray(characters.id, characterIds))
+        : [];
+
+    const characterMap = new Map(
+      characterResult.map((character) => [character.id, character.name])
+    );
+
+    if (assignedId != null && !characterMap.has(assignedId)) {
+      return {
+        success: false,
+        message: 'Please correct the highlighted fields.',
+        errors: {
+          assignedId: ['Character does not exist'],
+        },
+      };
     }
-    if (holderId != null) {
-      const charExists = await db
-        .select()
-        .from(characters)
-        .where(eq(characters.id, holderId))
-        .limit(1);
-      if (!charExists.length) {
-        return {
-          success: false,
-          message: 'Please correct the highlighted fields.',
-          errors: { holderId: ['Character does not exist'] },
-        };
-      }
+
+    if (holderId != null && !characterMap.has(holderId)) {
+      return {
+        success: false,
+        message: 'Please correct the highlighted fields.',
+        errors: {
+          holderId: ['Character does not exist'],
+        },
+      };
     }
+
+    assignedName = assignedId != null ? (characterMap.get(assignedId) ?? null) : null;
+    holderName = holderId != null ? (characterMap.get(holderId) ?? null) : null;
 
     const status = getItemStatus(assignedId, holderId);
 
-    await db.insert(items).values({
-      name,
-      grade,
-      type,
-      enchantLevel: enchant,
-      ownerUserId,
-      assignedId,
-      holderId,
-      status,
+    await db.transaction(async (tx) => {
+      const [item] = await tx
+        .insert(items)
+        .values({
+          name,
+          grade,
+          type,
+          enchantLevel: enchant,
+          ownerUserId,
+          assignedId,
+          holderId,
+          status,
+        })
+        .returning();
+
+      await tx.insert(itemEvents).values({
+        itemId: item.id,
+        type: 'item_created',
+        changedByUserId: getCurrentUserId(),
+        snapshot: createItemSnapshot(item, {
+          ownerName,
+          assignedName,
+          holderName,
+        }),
+      });
     });
     revalidatePath('/dashboard/items');
     return { success: true, message: 'Item added successfully' };
@@ -126,10 +162,33 @@ export async function getItems() {
 }
 
 export async function deleteItem(id: number): Promise<ActionResult> {
+  const userId = getCurrentUserId();
+
   try {
-    await db.delete(items).where(eq(items.id, id));
+    const item = await db.select().from(items).where(eq(items.id, id)).limit(1);
+    if (!item.length) {
+      return {
+        success: false,
+        message: 'Item not found.',
+      };
+    }
+
+    const relations = await getItemSnapshotRelations(db, item[0]);
+
+    await db.transaction(async (tx) => {
+      await tx.insert(itemEvents).values({
+        itemId: item[0].id,
+        type: 'item_deleted',
+        changedByUserId: userId,
+        snapshot: createItemSnapshot(item[0], relations),
+      });
+      await tx.delete(items).where(eq(items.id, id));
+    });
     revalidatePath('/dashboard/items');
-    return { success: true, message: 'Item deleted successfully' };
+    return {
+      success: true,
+      message: 'Item deleted successfully',
+    };
   } catch (error) {
     console.log('deleteItem failed', error);
     return {
@@ -164,58 +223,82 @@ export async function updateItem(
     const userId = getCurrentUserId();
     const currentItem = await db.select().from(items).where(eq(items.id, id)).limit(1);
     if (!currentItem.length) return { success: false, message: 'Item not found.' };
+    const item = currentItem[0];
 
     const { name, grade, type, enchant, ownerUserId, assignedId, holderId } = validatedFields.data;
+
+    const oldOwnerUserId = currentItem[0].ownerUserId;
     const oldAssignedId = currentItem[0].assignedId;
     const oldHolderId = currentItem[0].holderId;
+
+    const ownerChanged = oldOwnerUserId !== ownerUserId;
     const assignedChanged = oldAssignedId !== assignedId;
     const holderChanged = oldHolderId !== holderId;
 
+    let ownerName: string | null = null;
+    let assignedName: string | null = null;
+    let holderName: string | null = null;
+
     if (ownerUserId != null) {
-      const userExists = await db.select().from(users).where(eq(users.id, ownerUserId)).limit(1);
-      if (!userExists.length) {
+      const user = await db.select().from(users).where(eq(users.id, ownerUserId)).limit(1);
+      if (!user.length) {
         return {
           success: false,
           message: 'Please correct the highlighted fields.',
           errors: { ownerUserId: ['User does not exist'] },
         };
       }
+      ownerName = user[0].username;
     }
 
-    if (assignedId != null) {
-      const charExists = await db
-        .select()
-        .from(characters)
-        .where(eq(characters.id, assignedId))
-        .limit(1);
-      if (!charExists.length) {
-        return {
-          success: false,
-          message: 'Please correct the highlighted fields.',
-          errors: { assignedId: ['Character does not exist'] },
-        };
-      }
+    const characterIds = [assignedId, holderId].filter((value): value is number => value != null);
+
+    const characterResult =
+      characterIds.length > 0
+        ? await db
+            .select({
+              id: characters.id,
+              name: characters.name,
+            })
+            .from(characters)
+            .where(inArray(characters.id, characterIds))
+        : [];
+
+    const characterMap = new Map(
+      characterResult.map((character) => [character.id, character.name])
+    );
+
+    if (assignedId != null && !characterMap.has(assignedId)) {
+      return {
+        success: false,
+        message: 'Please correct the highlighted fields.',
+        errors: {
+          assignedId: ['Character does not exist'],
+        },
+      };
     }
 
-    if (holderId != null) {
-      const charExists = await db
-        .select()
-        .from(characters)
-        .where(eq(characters.id, holderId))
-        .limit(1);
-      if (!charExists.length) {
-        return {
-          success: false,
-          message: 'Please correct the highlighted fields.',
-          errors: { holderId: ['Character does not exist'] },
-        };
-      }
+    if (holderId != null && !characterMap.has(holderId)) {
+      return {
+        success: false,
+        message: 'Please correct the highlighted fields.',
+        errors: {
+          holderId: ['Character does not exist'],
+        },
+      };
     }
 
+    assignedName = assignedId != null ? (characterMap.get(assignedId) ?? null) : null;
+    holderName = holderId != null ? (characterMap.get(holderId) ?? null) : null;
+    const relations = await getItemSnapshotRelations(db, item);
+
+    const oldOwnerName = relations.ownerName;
+    const oldAssignedName = relations.assignedName;
+    const oldHolderName = relations.holderName;
     const status = getItemStatus(assignedId, holderId);
 
     await db.transaction(async (tx) => {
-      await tx
+      const [updatedItem] = await tx
         .update(items)
         .set({
           name,
@@ -225,25 +308,69 @@ export async function updateItem(
           ownerUserId,
           assignedId,
           holderId,
-          status: status,
+          status,
           updatedAt: new Date(),
         })
-        .where(eq(items.id, id));
+        .where(eq(items.id, id))
+        .returning();
 
-      if (assignedChanged) {
-        await tx.insert(reassignments).values({
+      if (ownerChanged) {
+        await tx.insert(itemEvents).values({
           itemId: id,
-          fromAssignedId: oldAssignedId,
-          toAssignedId: assignedId,
+          type: 'owner_change',
+
+          fromOwnerUserId: oldOwnerUserId,
+          fromOwnerName: oldOwnerName,
+
+          toOwnerUserId: ownerUserId,
+          toOwnerName: ownerName,
+
           changedByUserId: userId,
+          snapshot: createItemSnapshot(updatedItem, {
+            ownerName,
+            assignedName,
+            holderName,
+          }),
         });
       }
-      if (holderChanged) {
-        await tx.insert(transfers).values({
+
+      if (assignedChanged) {
+        await tx.insert(itemEvents).values({
           itemId: id,
-          fromHolderId: oldHolderId,
-          toHolderId: holderId,
+          type: 'reassignment',
+
+          fromAssignedId: oldAssignedId,
+          fromAssignedName: oldAssignedName,
+
+          toAssignedId: assignedId,
+          toAssignedName: assignedName,
+
           changedByUserId: userId,
+          snapshot: createItemSnapshot(updatedItem, {
+            ownerName,
+            assignedName,
+            holderName,
+          }),
+        });
+      }
+
+      if (holderChanged) {
+        await tx.insert(itemEvents).values({
+          itemId: id,
+          type: 'transfer',
+
+          fromHolderId: oldHolderId,
+          fromHolderName: oldHolderName,
+
+          toHolderId: holderId,
+          toHolderName: holderName,
+
+          changedByUserId: userId,
+          snapshot: createItemSnapshot(updatedItem, {
+            ownerName,
+            assignedName,
+            holderName,
+          }),
         });
       }
     });
@@ -261,9 +388,10 @@ export async function updateItemOwner(
   userId: number | null
 ): Promise<ActionResult<ItemFieldErrors>> {
   try {
+    let ownerName: string | null = null;
     if (userId !== null) {
-      const userExists = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-      if (!userExists.length) {
+      const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      if (!user.length) {
         return {
           success: false,
           message: 'Please correct the highlighted fields.',
@@ -272,10 +400,12 @@ export async function updateItemOwner(
           },
         };
       }
+      ownerName = user[0].username;
     }
 
     const item = await db.select().from(items).where(eq(items.id, id)).limit(1);
     if (!item.length) return { success: false, message: 'Item not found.' };
+    const oldOwnerUserId = item[0].ownerUserId;
 
     if (item[0].ownerUserId === userId) {
       return {
@@ -283,8 +413,37 @@ export async function updateItemOwner(
         message: 'Item is already owned by this user.',
       };
     }
+    const relations = await getItemSnapshotRelations(db, item[0]);
+    const oldOwnerName = relations.ownerName;
 
-    await db.update(items).set({ ownerUserId: userId }).where(eq(items.id, id));
+    await db.transaction(async (tx) => {
+      const [updatedItem] = await tx
+        .update(items)
+        .set({
+          ownerUserId: userId,
+          updatedAt: new Date(),
+        })
+        .where(eq(items.id, id))
+        .returning();
+
+      await tx.insert(itemEvents).values({
+        itemId: id,
+        type: 'owner_change',
+
+        fromOwnerUserId: oldOwnerUserId,
+        fromOwnerName: oldOwnerName,
+
+        toOwnerUserId: userId,
+        toOwnerName: ownerName,
+
+        changedByUserId: getCurrentUserId(),
+        snapshot: createItemSnapshot(updatedItem, {
+          ownerName,
+          assignedName: relations.assignedName,
+          holderName: relations.holderName,
+        }),
+      });
+    });
     revalidatePath('/dashboard/items');
     return { success: true, message: 'Item owner changed successfully' };
   } catch (error) {
@@ -300,13 +459,14 @@ export async function updateItemAssigned(
   const userId = getCurrentUserId();
 
   try {
+    let assignedName: string | null = null;
     if (characterId !== null) {
-      const charExists = await db
+      const character = await db
         .select()
         .from(characters)
         .where(eq(characters.id, characterId))
         .limit(1);
-      if (!charExists.length) {
+      if (!character.length) {
         return {
           success: false,
           message: 'Please correct the highlighted fields.',
@@ -315,6 +475,7 @@ export async function updateItemAssigned(
           },
         };
       }
+      assignedName = character[0].name;
     }
     const item = await db.select().from(items).where(eq(items.id, id)).limit(1);
     if (!item.length) return { success: false, message: 'Item not found.' };
@@ -323,15 +484,38 @@ export async function updateItemAssigned(
     if (oldAssignedId === characterId)
       return { success: true, message: 'Item is already assigned to this character.' };
 
+    const relations = await getItemSnapshotRelations(db, item[0]);
+    const oldAssignedName: string | null = relations.assignedName;
+
     const currentHolderId = item[0]?.holderId ?? null;
     const status = getItemStatus(characterId, currentHolderId);
     await db.transaction(async (tx) => {
-      await tx.update(items).set({ assignedId: characterId, status }).where(eq(items.id, id));
-      await tx.insert(reassignments).values({
+      const [updatedItem] = await tx
+        .update(items)
+        .set({
+          assignedId: characterId,
+          status,
+          updatedAt: new Date(),
+        })
+        .where(eq(items.id, id))
+        .returning();
+
+      await tx.insert(itemEvents).values({
         itemId: id,
+        type: 'reassignment',
+
         fromAssignedId: oldAssignedId,
+        fromAssignedName: oldAssignedName,
+
         toAssignedId: characterId,
+        toAssignedName: assignedName,
+
         changedByUserId: userId,
+        snapshot: createItemSnapshot(updatedItem, {
+          assignedName,
+          ownerName: relations.ownerName,
+          holderName: relations.holderName,
+        }),
       });
     });
 
@@ -350,13 +534,14 @@ export async function updateItemHolder(
   const userId = getCurrentUserId();
 
   try {
+    let holderName: string | null = null;
     if (characterId !== null) {
-      const charExists = await db
+      const character = await db
         .select()
         .from(characters)
         .where(eq(characters.id, characterId))
         .limit(1);
-      if (!charExists.length) {
+      if (!character.length) {
         return {
           success: false,
           message: 'Please correct the highlighted fields.',
@@ -365,6 +550,7 @@ export async function updateItemHolder(
           },
         };
       }
+      holderName = character[0].name;
     }
     const item = await db.select().from(items).where(eq(items.id, id)).limit(1);
     if (!item.length) return { success: false, message: 'Item not found.' };
@@ -373,16 +559,40 @@ export async function updateItemHolder(
     if (oldHolderId === characterId)
       return { success: true, message: 'Item is already transferred to this character.' };
 
+    const relations = await getItemSnapshotRelations(db, item[0]);
+    const oldHolderName: string | null = relations.holderName;
+
     const currentAssignedId = item[0]?.assignedId ?? null;
     const status = getItemStatus(currentAssignedId, characterId);
 
     await db.transaction(async (tx) => {
-      await tx.update(items).set({ holderId: characterId, status }).where(eq(items.id, id));
-      await tx.insert(transfers).values({
+      const [updatedItem] = await tx
+        .update(items)
+        .set({
+          holderId: characterId,
+          status,
+          updatedAt: new Date(),
+        })
+        .where(eq(items.id, id))
+        .returning();
+
+      await tx.insert(itemEvents).values({
         itemId: id,
+        type: 'transfer',
+
         fromHolderId: oldHolderId,
+        fromHolderName: oldHolderName,
+
         toHolderId: characterId,
+        toHolderName: holderName,
+
         changedByUserId: userId,
+
+        snapshot: createItemSnapshot(updatedItem, {
+          holderName,
+          ownerName: relations.ownerName,
+          assignedName: relations.assignedName,
+        }),
       });
     });
 

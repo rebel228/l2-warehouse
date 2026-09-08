@@ -9,6 +9,7 @@ import { ConfirmDialog } from '../shared/AlertDialog';
 import { ItemWithRelations } from '@/app/actions/items';
 import { ItemDialogForm } from './ItemDialogForm';
 import { ItemActionDialog } from './ItemActionDialog';
+import { toast } from 'sonner';
 
 const headers = ['Name', 'Grade', 'Type', 'Status', 'Owner', 'Assigned', 'Holder'];
 
@@ -48,15 +49,18 @@ export default function ItemTable({ initialItems }: ItemTableProps) {
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (itemToDelete !== null) {
-      deleteMutation.mutate(itemToDelete, {
-        onSuccess: () => {
-          setDeleteDialogOpen(false);
-          setItemToDelete(null);
-        },
-      });
+  const handleConfirmDelete = async () => {
+    if (itemToDelete === null) return;
+    const data = await deleteMutation.mutateAsync(itemToDelete);
+
+    if (!data.success) {
+      toast.error(data.message);
+      return;
     }
+
+    toast.success(data.message);
+    setDeleteDialogOpen(false);
+    setItemToDelete(null);
   };
 
   if (isLoading) return <div>Loading...</div>;

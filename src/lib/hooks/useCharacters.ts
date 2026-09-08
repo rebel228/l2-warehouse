@@ -51,6 +51,7 @@ export function useDeleteCharacter() {
     mutationFn: deleteCharacter,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['characters'] });
+      queryClient.invalidateQueries({ queryKey: ['logs'] });
     },
   });
 }
