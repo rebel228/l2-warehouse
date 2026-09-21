@@ -210,6 +210,7 @@ export async function updateItem(
     grade: formData.get('grade'),
     type: formData.get('type'),
     enchant: formData.get('enchant'),
+    imageUrl: formData.get('imageUrl'),
     ownerUserId: formData.get('ownerUserId') ? Number(formData.get('ownerUserId')) : null,
     assignedId: formData.get('assignedId') ? Number(formData.get('assignedId')) : null,
     holderId: formData.get('holderId') ? Number(formData.get('holderId')) : null,
@@ -228,7 +229,8 @@ export async function updateItem(
     if (!currentItem.length) return { success: false, message: 'Item not found.' };
     const item = currentItem[0];
 
-    const { name, grade, type, enchant, ownerUserId, assignedId, holderId } = validatedFields.data;
+    const { name, grade, type, enchant, imageUrl, ownerUserId, assignedId, holderId } =
+      validatedFields.data;
 
     const oldOwnerUserId = currentItem[0].ownerUserId;
     const oldAssignedId = currentItem[0].assignedId;
@@ -308,6 +310,7 @@ export async function updateItem(
           grade,
           type,
           enchantLevel: enchant,
+          imageUrl,
           ownerUserId,
           assignedId,
           holderId,
