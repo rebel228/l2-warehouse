@@ -22,6 +22,7 @@ export async function addItem(formData: FormData): Promise<ActionResult<ItemFiel
     grade: formData.get('grade'),
     type: formData.get('type'),
     enchant: formData.get('enchant'),
+    imageUrl: formData.get('imageUrl'),
     ownerUserId: formData.get('ownerUserId') ? Number(formData.get('ownerUserId')) : null,
     assignedId: formData.get('assignedId') ? Number(formData.get('assignedId')) : null,
     holderId: formData.get('holderId') ? Number(formData.get('holderId')) : null,
@@ -35,7 +36,8 @@ export async function addItem(formData: FormData): Promise<ActionResult<ItemFiel
   }
 
   try {
-    const { name, grade, type, enchant, ownerUserId, assignedId, holderId } = validatedFields.data;
+    const { name, grade, type, enchant, imageUrl, ownerUserId, assignedId, holderId } =
+      validatedFields.data;
     let ownerName: string | null = null;
     let assignedName: string | null = null;
     let holderName: string | null = null;
@@ -101,6 +103,7 @@ export async function addItem(formData: FormData): Promise<ActionResult<ItemFiel
           grade,
           type,
           enchantLevel: enchant,
+          imageUrl,
           ownerUserId,
           assignedId,
           holderId,
@@ -207,6 +210,7 @@ export async function updateItem(
     grade: formData.get('grade'),
     type: formData.get('type'),
     enchant: formData.get('enchant'),
+    imageUrl: formData.get('imageUrl'),
     ownerUserId: formData.get('ownerUserId') ? Number(formData.get('ownerUserId')) : null,
     assignedId: formData.get('assignedId') ? Number(formData.get('assignedId')) : null,
     holderId: formData.get('holderId') ? Number(formData.get('holderId')) : null,
@@ -225,7 +229,8 @@ export async function updateItem(
     if (!currentItem.length) return { success: false, message: 'Item not found.' };
     const item = currentItem[0];
 
-    const { name, grade, type, enchant, ownerUserId, assignedId, holderId } = validatedFields.data;
+    const { name, grade, type, enchant, imageUrl, ownerUserId, assignedId, holderId } =
+      validatedFields.data;
 
     const oldOwnerUserId = currentItem[0].ownerUserId;
     const oldAssignedId = currentItem[0].assignedId;
@@ -305,6 +310,7 @@ export async function updateItem(
           grade,
           type,
           enchantLevel: enchant,
+          imageUrl,
           ownerUserId,
           assignedId,
           holderId,

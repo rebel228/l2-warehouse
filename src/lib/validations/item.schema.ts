@@ -9,6 +9,7 @@ export const addItemSchema = z.object({
   ownerUserId: z.coerce.number().positive().nullable().optional(),
   assignedId: z.coerce.number().positive().nullable().optional(),
   holderId: z.coerce.number().positive().nullable().optional(),
+  imageUrl: z.url().nullable().optional(),
 });
 
 export type AddItemSchema = z.infer<typeof addItemSchema>;
