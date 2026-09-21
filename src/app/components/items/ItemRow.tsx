@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import { ContextMenuWrapper } from '../shared/ContextMenu';
 import { useState } from 'react';
 import { ItemRowProps } from '@/lib/types/dashboard';
@@ -18,8 +19,19 @@ export function ItemRow({ item, actions }: ItemRowProps) {
         onContextMenu={() => setIsSelected(true)}
       >
         <div className="font-medium truncate flex items-center gap-2">
-          <span className="mr-1">{typeIcon[item.type] || '📦'}</span>
+          {item.imageUrl ? (
+            <Image
+              src={item.imageUrl}
+              alt={item.name}
+              width={32}
+              height={32}
+              className="shrink-0 object-contain"
+            />
+          ) : (
+            <span className="mr-1 shrink-0">{typeIcon[item.type] || '📦'}</span>
+          )}
           {item.name}
+          {item.enchantLevel > 0 && ` +${item.enchantLevel}`}
         </div>
         <div className="text-center font-mono font-semibold">{item.grade}</div>
         <div className="truncate">{item.type}</div>
