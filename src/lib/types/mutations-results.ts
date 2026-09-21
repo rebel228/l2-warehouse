@@ -17,6 +17,7 @@ export type ItemFieldErrors = {
   ownerUserId?: string[];
   assignedId?: string[];
   holderId?: string[];
+  imageUrl?: string[];
 };
 
 export type CharacterFieldErrors = {

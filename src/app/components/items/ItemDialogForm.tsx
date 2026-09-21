@@ -27,11 +27,17 @@ import { useAddItem, useUpdateItem } from '@/lib/hooks/useItems';
 import { ItemFieldErrors } from '@/lib/types/mutations-results';
 import { toast } from 'sonner';
 import { GRADES, ITEM_TYPES } from '@/lib/constants';
+import { searchL2Items } from '@/lib/api/client';
+import { L2ItemSearchResult } from '@/lib/api/types';
 
 export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFormProps) {
   const grades = GRADES.map((value) => ({ value, label: value }));
   const itemTypes = ITEM_TYPES.map((value) => ({ value, label: value }));
   const [fieldErrors, setFieldErrors] = useState<ItemFieldErrors>({});
+
+  const [itemSearchTerm, setItemSearchTerm] = useState(itemToEdit?.name ?? '');
+  const [itemList, setItemList] = useState<L2ItemSearchResult[]>([]);
+  const [selectedItem, setSelectedItem] = useState<L2ItemSearchResult | null>(null);
 
   const [name, setName] = useState(itemToEdit?.name ?? '');
   const [grade, setGrade] = useState(itemToEdit?.grade ?? '');
@@ -81,6 +87,7 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
     setHolderList([]);
     setHolderError('');
     setFieldErrors({});
+    setSelectedItem(null);
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -136,6 +143,35 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
     setAssignedList([]);
   };
 
+  const handleItemSearch = useDebouncedCallback(async (value: string) => {
+    if (value.length >= 1) {
+      const result = await searchL2Items(value);
+      setItemList(result.data);
+    } else {
+      setItemList([]);
+    }
+  }, 300);
+
+  const handleItemSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+
+    setSelectedItem(null);
+    setItemSearchTerm(value);
+    handleItemSearch(value);
+  };
+
+  const handleItemSelect = (item: L2ItemSearchResult) => {
+    handleItemSearch.cancel();
+
+    setSelectedItem(item);
+    setItemSearchTerm(item.name);
+    setName(item.name);
+    setGrade(item.grade.toUpperCase());
+    setType(item.type.charAt(0).toUpperCase() + item.type.slice(1));
+
+    setItemList([]);
+  };
+
   const handleHolderSearch = useDebouncedCallback(async (value: string) => {
     if (value.length >= 1) {
       const result = await searchCharacters(value);
@@ -183,6 +219,10 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
     }
 
     const formData = new FormData(e.currentTarget);
+
+    if (selectedItem) {
+      formData.append('imageUrl', `https://l2api.dev/icons/${selectedItem.iconFile}`);
+    }
 
     if (selectedOwnerId) {
       formData.append('ownerUserId', selectedOwnerId);
@@ -245,13 +285,28 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
             <Field>
               <Label htmlFor="name">Name</Label>
               <div className="flex flex-col">
-                <Input
-                  id="name"
-                  name="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  aria-describedby="customer-error"
-                />
+                <div className="relative">
+                  <Input
+                    id="name"
+                    name="name"
+                    value={itemSearchTerm}
+                    onChange={handleItemSearchChange}
+                    aria-describedby="customer-error"
+                  />
+                  {itemList.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 rounded-md border border-border bg-popover text-popover-foreground shadow-md overflow-hidden">
+                      {itemList.map((item) => (
+                        <div
+                          key={item.id}
+                          className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-muted hover:text-muted-foreground"
+                          onClick={() => handleItemSelect(item)}
+                        >
+                          {item.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div
                   id="customer-error"
                   aria-live="polite"
