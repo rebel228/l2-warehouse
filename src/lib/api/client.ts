@@ -2,9 +2,14 @@ import type { L2ItemSearchResponse } from './types';
 
 const API_URL = 'https://l2api.dev/api/interlude';
 
-export async function searchL2Items(query: string, limit = 10): Promise<L2ItemSearchResponse> {
+export async function searchL2Items(
+  query: string,
+  type: 'weapon' | 'armor',
+  limit = 10
+): Promise<L2ItemSearchResponse> {
   const params = new URLSearchParams({
     q: query,
+    type,
     limit: String(limit),
   });
 

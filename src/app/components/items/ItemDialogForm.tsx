@@ -145,8 +145,12 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
 
   const handleItemSearch = useDebouncedCallback(async (value: string) => {
     if (value.length >= 1) {
-      const result = await searchL2Items(value);
-      setItemList(result.data);
+      const [weapons, armors] = await Promise.all([
+        searchL2Items(value, 'weapon'),
+        searchL2Items(value, 'armor'),
+      ]);
+
+      setItemList([...weapons.data, ...armors.data]);
     } else {
       setItemList([]);
     }
@@ -167,7 +171,7 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
     setItemSearchTerm(item.name);
     setName(item.name);
     setGrade(item.grade.toUpperCase());
-    setType(item.type.charAt(0).toUpperCase() + item.type.slice(1));
+    setType(item.type === 'weapon' ? 'Weapon' : 'Armor');
 
     setItemList([]);
   };
