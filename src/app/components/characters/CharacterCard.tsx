@@ -9,11 +9,10 @@ import {
   AccordionTrigger,
 } from '@/app/components/ui/accordion';
 import { Button } from '../ui/button';
-import { buildItemList } from '@/lib/helpers/character-helpers';
-import { buildMenu } from '@/lib/helpers/item-helpers';
+import { buildCharacterItemMenu, buildItemList } from '@/lib/helpers/character-helpers';
 import CharacterItemRow from './CharacterItemRow';
 import { useDeleteCharacter } from '@/lib/hooks/useCharacters';
-import { useDeleteItem } from '@/lib/hooks/useItems';
+import { useDeleteItem, useEquipItem } from '@/lib/hooks/useItems';
 import { useState } from 'react';
 import { CharacterWithRelations } from '@/app/actions/characters';
 import { ItemWithRelations } from '@/app/actions/items';
@@ -49,6 +48,7 @@ export default function CharacterCard({ character, onEdit }: CharacterCardProps)
   const deleteMutation = useDeleteCharacter();
 
   const deleteItemMutation = useDeleteItem();
+  const equipItemMutation = useEquipItem();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [characterToDelete, setCharacterToDelete] = useState<CharacterWithRelations | null>(null);
@@ -136,6 +136,24 @@ export default function CharacterCard({ character, onEdit }: CharacterCardProps)
     setItemActionDialogOpen(true);
   };
 
+  const handleEquip = async (item: ItemWithRelations) => {
+    const data = await equipItemMutation.mutateAsync({
+      itemId: item.id,
+      characterId: character.id,
+    });
+
+    if (!data.success) {
+      toast.error(data.message);
+      return;
+    }
+
+    toast.success(data.message);
+  };
+
+  const handleUnequip = (item: ItemWithRelations) => {
+    console.log('unequip', item);
+  };
+
   return (
     <div className="w-80 flex-shrink-0">
       <Accordion className="w-full bg-card border shadow-sm hover:shadow-md transition-shadow">
@@ -203,11 +221,14 @@ export default function CharacterCard({ character, onEdit }: CharacterCardProps)
               ) : (
                 <div className="space-y-1 max-h-60 overflow-y-auto">
                   {itemList.map(({ item, type }) => {
-                    const actions = buildMenu(
+                    const actions = buildCharacterItemMenu(
                       item,
+                      character.id,
                       handleItemDelete,
                       handleItemEdit,
-                      handleItemAction
+                      handleItemAction,
+                      handleEquip,
+                      handleUnequip
                     );
 
                     return (

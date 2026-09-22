@@ -633,6 +633,10 @@ export async function equipItem(itemId: number, characterId: number): Promise<Ac
         return { success: false, message: 'Item is not held by this character.' };
       }
 
+      if (item.assignedId !== characterId) {
+        return { success: false, message: 'Item is not assigned to this character.' };
+      }
+
       let slot: EquipmentSlot | null = null;
 
       switch (item.bodypart) {

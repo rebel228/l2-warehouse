@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   addItem,
   deleteItem,
+  equipItem,
   getItems,
   ItemWithRelations,
   updateItem,
@@ -101,6 +102,19 @@ export function useUpdateItemHolder() {
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: ['items'] });
         queryClient.invalidateQueries({ queryKey: ['items'] });
+        queryClient.invalidateQueries({ queryKey: ['characters'] });
+      }
+    },
+  });
+}
+
+export function useEquipItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemId, characterId }: { itemId: number; characterId: number }) =>
+      equipItem(itemId, characterId),
+    onSuccess: (data) => {
+      if (data.success) {
         queryClient.invalidateQueries({ queryKey: ['characters'] });
       }
     },
