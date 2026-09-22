@@ -781,3 +781,58 @@ export async function equipItem(itemId: number, characterId: number): Promise<Ac
     return { success: false, message: 'Failed to equip item.' };
   }
 }
+
+export async function unequipItem(itemId: number, characterId: number): Promise<ActionResult> {
+  try {
+    const result = await db.transaction(async (tx) => {
+      const [item] = await tx.select().from(items).where(eq(items.id, itemId)).limit(1);
+
+      if (!item) {
+        return {
+          success: false,
+          message: 'Item not found.',
+        };
+      }
+
+      if (item.holderId !== characterId) {
+        return {
+          success: false,
+          message: 'Item is not held by this character.',
+        };
+      }
+
+      if (item.slot === null) {
+        return {
+          success: false,
+          message: 'Item is not equipped.',
+        };
+      }
+
+      await tx
+        .update(items)
+        .set({
+          slot: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(items.id, itemId));
+
+      return {
+        success: true,
+        message: 'Item unequipped successfully.',
+      };
+    });
+
+    if (!result.success) return result;
+
+    revalidatePath('/dashboard/items');
+
+    return result;
+  } catch (error) {
+    console.error('unequipItem failed', error);
+
+    return {
+      success: false,
+      message: 'Failed to unequip item.',
+    };
+  }
+}

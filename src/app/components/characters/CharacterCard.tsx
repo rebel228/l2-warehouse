@@ -13,7 +13,7 @@ import { Button } from '../ui/button';
 import { buildCharacterItemMenu, buildItemList } from '@/lib/helpers/character-helpers';
 import CharacterItemRow from './CharacterItemRow';
 import { useDeleteCharacter } from '@/lib/hooks/useCharacters';
-import { useDeleteItem, useEquipItem } from '@/lib/hooks/useItems';
+import { useDeleteItem, useEquipItem, useUnequipItem } from '@/lib/hooks/useItems';
 import { useState } from 'react';
 import { CharacterWithRelations } from '@/app/actions/characters';
 import { ItemWithRelations } from '@/app/actions/items';
@@ -53,7 +53,7 @@ export default function CharacterCard({ character, onEdit }: CharacterCardProps)
 
   const deleteItemMutation = useDeleteItem();
   const equipItemMutation = useEquipItem();
-
+  const unequipItemMutation = useUnequipItem();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [characterToDelete, setCharacterToDelete] = useState<CharacterWithRelations | null>(null);
 
@@ -154,8 +154,18 @@ export default function CharacterCard({ character, onEdit }: CharacterCardProps)
     toast.success(data.message);
   };
 
-  const handleUnequip = (item: ItemWithRelations) => {
-    console.log('unequip', item);
+  const handleUnequip = async (item: ItemWithRelations) => {
+    const data = await unequipItemMutation.mutateAsync({
+      itemId: item.id,
+      characterId: character.id,
+    });
+
+    if (!data.success) {
+      toast.error(data.message);
+      return;
+    }
+
+    toast.success(data.message);
   };
 
   const handleEquipmentOpenChange = (open: boolean) => {

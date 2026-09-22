@@ -5,6 +5,7 @@ import {
   equipItem,
   getItems,
   ItemWithRelations,
+  unequipItem,
   updateItem,
   updateItemAssigned,
   updateItemHolder,
@@ -113,6 +114,19 @@ export function useEquipItem() {
   return useMutation({
     mutationFn: ({ itemId, characterId }: { itemId: number; characterId: number }) =>
       equipItem(itemId, characterId),
+    onSuccess: (data) => {
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ['characters'] });
+      }
+    },
+  });
+}
+
+export function useUnequipItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemId, characterId }: { itemId: number; characterId: number }) =>
+      unequipItem(itemId, characterId),
     onSuccess: (data) => {
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: ['characters'] });
