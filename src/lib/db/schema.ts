@@ -27,7 +27,7 @@ export const itemEventType = pgEnum('itemEventType', [
 ]);
 export const equipmentSlot = pgEnum('equipmentSlot', [
   'weapon',
-  'shield',
+  'offhand',
   'helmet',
   'chest',
   'legs',

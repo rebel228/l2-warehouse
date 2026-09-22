@@ -4,13 +4,14 @@ import { revalidatePath } from 'next/cache';
 import { db } from '../../lib/db';
 import { addItemSchema } from '../../lib/validations/item.schema';
 import { items, users, characters, itemEvents } from '@/lib/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, isNotNull, ne, and } from 'drizzle-orm';
 import {
   createItemSnapshot,
   getItemSnapshotRelations,
   getItemStatus,
 } from '@/lib/helpers/item-helpers';
 import { ActionResult, ItemFieldErrors } from '@/lib/types/mutations-results';
+import { EquipmentSlot, getOccupiedSlots } from '@/lib/items/equipment-rules';
 
 const getCurrentUserId = () => 1; // temporary, change to user after adding auth
 
@@ -616,5 +617,158 @@ export async function updateItemHolder(
   } catch (error) {
     console.log('updateItemHolder failed', error);
     return { success: false, message: 'Failed to transfer item. Please try again later.' };
+  }
+}
+
+export async function equipItem(itemId: number, characterId: number): Promise<ActionResult> {
+  try {
+    const result = await db.transaction(async (tx) => {
+      const [item] = await tx.select().from(items).where(eq(items.id, itemId)).limit(1);
+
+      if (!item) {
+        return { success: false, message: 'Item not found.' };
+      }
+
+      if (item.holderId !== characterId) {
+        return { success: false, message: 'Item is not held by this character.' };
+      }
+
+      let slot: EquipmentSlot | null = null;
+
+      switch (item.bodypart) {
+        case 'One-handed':
+        case 'Two-handed':
+          if (item.type !== 'Weapon') {
+            return { success: false, message: 'Item cannot be equipped.' };
+          }
+
+          slot = 'weapon';
+          break;
+
+        case 'Off-hand':
+          slot = 'offhand';
+          break;
+
+        case 'Helmet':
+          slot = 'helmet';
+          break;
+
+        case 'Chest':
+          slot = 'chest';
+          break;
+
+        case 'Legs':
+          slot = 'legs';
+          break;
+
+        case 'Full Armor':
+          slot = 'chest';
+          break;
+
+        case 'Gloves':
+          slot = 'gloves';
+          break;
+
+        case 'Boots':
+          slot = 'boots';
+          break;
+
+        case 'Necklace':
+          slot = 'necklace';
+          break;
+
+        case 'Earring':
+        case 'Ring':
+          break;
+
+        default:
+          return { success: false, message: 'Item cannot be equipped.' };
+      }
+
+      const equippedItems = await tx
+        .select()
+        .from(items)
+        .where(and(eq(items.holderId, characterId), isNotNull(items.slot), ne(items.id, itemId)));
+
+      if (item.bodypart === 'Ring' || item.bodypart === 'Earring') {
+        const leftSlot: EquipmentSlot = item.bodypart === 'Ring' ? 'ring_left' : 'earring_left';
+
+        const rightSlot: EquipmentSlot = item.bodypart === 'Ring' ? 'ring_right' : 'earring_right';
+
+        const leftItem = equippedItems.find((equippedItem) => equippedItem.slot === leftSlot);
+
+        const rightItem = equippedItems.find((equippedItem) => equippedItem.slot === rightSlot);
+
+        if (!leftItem) {
+          slot = leftSlot;
+        } else if (!rightItem) {
+          slot = rightSlot;
+        } else {
+          await tx
+            .update(items)
+            .set({
+              slot: null,
+              updatedAt: new Date(),
+            })
+            .where(eq(items.id, leftItem.id));
+
+          await tx
+            .update(items)
+            .set({
+              slot: leftSlot,
+              updatedAt: new Date(),
+            })
+            .where(eq(items.id, itemId));
+
+          return {
+            success: true,
+            message: 'Item equipped successfully.',
+          };
+        }
+      }
+
+      if (!slot) {
+        return { success: false, message: 'Item cannot be equipped.' };
+      }
+
+      const occupiedSlots = getOccupiedSlots(item, slot);
+      const conflicts = equippedItems.filter((equippedItem) => {
+        if (equippedItem.slot) return occupiedSlots.includes(equippedItem.slot);
+      });
+
+      if (conflicts) {
+        conflicts.forEach(async (equippedItem) => {
+          await tx
+            .update(items)
+            .set({
+              slot: null,
+              updatedAt: new Date(),
+            })
+            .where(eq(items.id, equippedItem.id));
+        });
+      }
+
+      await tx
+        .update(items)
+        .set({
+          slot,
+          updatedAt: new Date(),
+        })
+        .where(eq(items.id, itemId));
+
+      return { success: true, message: 'Item equipped successfully.' };
+    });
+
+    if (!result.success) {
+      return result;
+    }
+
+    revalidatePath('/dashboard/items');
+
+    return result;
+  } catch (error) {
+    console.error('equipItem failed', error);
+
+    return { success: false, message: 'Failed to equip item.' };
   }
 }
