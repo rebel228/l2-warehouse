@@ -1,38 +1,8 @@
+import Image from 'next/image';
 import { useState } from 'react';
 import { ContextMenuWrapper } from '../shared/ContextMenu';
-import { MenuAction } from '@/lib/types/context-menu';
-import { Users, RotateCcw, MoveRight, Edit, Trash2 } from 'lucide-react';
-import { CharacterItemRowProps, ItemType, itemVariant } from '@/lib/types/dashboard';
-
-const itemActions = (item: ItemType): MenuAction[] => [
-  {
-    label: 'Change Owner',
-    icon: <Users className="h-4 w-4" />,
-    onClick: () => console.log('change owner', item),
-  },
-  {
-    label: 'Reassign',
-    icon: <RotateCcw className="h-4 w-4" />,
-    onClick: () => console.log('reassign', item),
-  },
-  {
-    label: 'Transfer',
-    icon: <MoveRight className="h-4 w-4" />,
-    onClick: () => console.log('transfer', item),
-  },
-  { type: 'separator' },
-  {
-    label: 'Edit',
-    icon: <Edit className="h-4 w-4" />,
-    onClick: () => console.log('edit', item),
-  },
-  {
-    label: 'Delete',
-    icon: <Trash2 className="h-4 w-4" />,
-    onClick: () => console.log('delete', item),
-    variant: 'destructive',
-  },
-];
+import { CharacterItemRowProps, itemVariant } from '@/lib/types/dashboard';
+import { typeIcon } from '@/lib/constants';
 
 const itemStyles: Record<itemVariant, { default: string; selected: string; hover: string }> = {
   assigned_in_place: {
@@ -54,7 +24,7 @@ const itemStyles: Record<itemVariant, { default: string; selected: string; hover
   },
 };
 
-export default function CharacterItemRow({ item, variant }: CharacterItemRowProps) {
+export default function CharacterItemRow({ item, variant, actions }: CharacterItemRowProps) {
   const [isSelected, setIsSelected] = useState(false);
 
   const handleOpenChange = (open: boolean) => {
@@ -63,10 +33,10 @@ export default function CharacterItemRow({ item, variant }: CharacterItemRowProp
 
   const styles = itemStyles[variant];
   const baseClasses =
-    'flex items-center justify-between px-2 py-1 rounded cursor-context-menu text-sm transition-colors';
+    'flex items-center gap-2 px-2 py-1 rounded cursor-context-menu text-sm transition-colors';
 
   return (
-    <ContextMenuWrapper actions={itemActions(item)} onOpenChange={handleOpenChange}>
+    <ContextMenuWrapper actions={actions} onOpenChange={handleOpenChange}>
       <div
         className={`
           ${baseClasses} ${styles.hover}
@@ -75,8 +45,24 @@ export default function CharacterItemRow({ item, variant }: CharacterItemRowProp
         `}
         onContextMenu={() => setIsSelected(true)}
       >
-        <span className="font-medium">{item.name}</span>
-        <span className="text-muted-foreground text-xs">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          {item.imageUrl ? (
+            <Image
+              src={item.imageUrl}
+              alt={item.name}
+              width={24}
+              height={24}
+              className="shrink-0 object-contain"
+            />
+          ) : (
+            <span className="mr-1 shrink-0">{typeIcon[item.type] || '📦'}</span>
+          )}
+          <span className="truncate font-medium">
+            {item.name}
+            {item.enchantLevel > 0 && ` +${item.enchantLevel}`}
+          </span>
+        </div>
+        <span className="ml-4 shrink-0 text-muted-foreground text-xs">
           {item.type} · {item.grade}
         </span>
       </div>

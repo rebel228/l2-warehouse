@@ -24,9 +24,7 @@ export function useAddCharacter() {
 
     onSuccess: (data) => {
       if (data.success) {
-        queryClient.invalidateQueries({
-          queryKey: ['characters'],
-        });
+        queryClient.invalidateQueries({ queryKey: ['characters'] });
       }
     },
   });

@@ -13,10 +13,15 @@ const variantClasses: Record<MenuItemVariant, string> = {
   destructive: 'text-destructive focus:bg-destructive/10',
 };
 
-export function ContextMenuWrapper({ children, actions, onOpenChange }: ContextMenuWrapperProps) {
+export function ContextMenuWrapper({
+  children,
+  actions,
+  onOpenChange,
+  className,
+}: ContextMenuWrapperProps) {
   return (
     <ContextMenu onOpenChange={onOpenChange}>
-      <ContextMenuTrigger>{children}</ContextMenuTrigger>
+      <ContextMenuTrigger className={className}>{children}</ContextMenuTrigger>
       <ContextMenuContent>
         {actions.map((action, index) => {
           if (action.type === 'separator') {

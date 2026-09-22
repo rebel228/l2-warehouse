@@ -85,6 +85,7 @@ export function ItemActionDialog({
   };
 
   const handleSelect = (id: number) => {
+    handleSearch.cancel();
     setSelectedId(id);
     setOptions([]);
     setSearchTerm(options.find((o) => o.id === id)?.label || '');

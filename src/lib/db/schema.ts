@@ -1,5 +1,14 @@
-import { defineRelations } from 'drizzle-orm';
-import { index, integer, jsonb, pgEnum, snakeCase, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { defineRelations, sql } from 'drizzle-orm';
+import {
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  snakeCase,
+  timestamp,
+  uniqueIndex,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { GRADES } from '../constants';
 
 // ==============================================
@@ -15,6 +24,20 @@ export const itemEventType = pgEnum('itemEventType', [
   'owner_change',
   'reassignment',
   'transfer',
+]);
+export const equipmentSlot = pgEnum('equipmentSlot', [
+  'weapon',
+  'offhand',
+  'helmet',
+  'chest',
+  'legs',
+  'gloves',
+  'boots',
+  'necklace',
+  'earring_left',
+  'earring_right',
+  'ring_left',
+  'ring_right',
 ]);
 export type ItemEventSnapshot = {
   name: string;
@@ -79,6 +102,7 @@ export const items = snakeCase.table(
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     name: varchar({ length: 255 }).notNull(),
     type: varchar({ length: 255 }).notNull(),
+    bodypart: varchar({ length: 50 }),
     grade: itemGrade().default('D').notNull(),
     enchantLevel: integer().default(0).notNull(),
     imageUrl: varchar({ length: 500 }),
@@ -91,6 +115,8 @@ export const items = snakeCase.table(
 
     assignedId: integer().references(() => characters.id),
     holderId: integer().references(() => characters.id),
+
+    slot: equipmentSlot(),
   },
   (table) => [
     index('items_owner_user_id_idx').on(table.ownerUserId),
@@ -98,48 +124,9 @@ export const items = snakeCase.table(
     index('items_assigned_id_idx').on(table.assignedId),
     index('items_holder_id_idx').on(table.holderId),
     index('items_status_idx').on(table.status),
-  ]
-);
-
-export const transfers = snakeCase.table(
-  'transfers',
-  {
-    id: integer().primaryKey().generatedAlwaysAsIdentity(),
-    itemId: integer()
-      .notNull()
-      .references(() => items.id),
-    fromHolderId: integer().references(() => characters.id),
-    toHolderId: integer().references(() => characters.id),
-    changedByUserId: integer()
-      .notNull()
-      .references(() => users.id),
-    transferredAt: timestamp().defaultNow().notNull(),
-  },
-  (table) => [
-    index('transfers_item_id_idx').on(table.itemId),
-    index('transfers_from_holder_id_idx').on(table.fromHolderId),
-    index('transfers_to_holder_id_idx').on(table.toHolderId),
-  ]
-);
-
-export const reassignments = snakeCase.table(
-  'reassignments',
-  {
-    id: integer().primaryKey().generatedAlwaysAsIdentity(),
-    itemId: integer()
-      .notNull()
-      .references(() => items.id),
-    fromAssignedId: integer().references(() => characters.id),
-    toAssignedId: integer().references(() => characters.id),
-    changedByUserId: integer()
-      .notNull()
-      .references(() => users.id),
-    reassignedAt: timestamp().defaultNow().notNull(),
-  },
-  (table) => [
-    index('reassignments_item_id_idx').on(table.itemId),
-    index('reassignments_from_assigned_id_idx').on(table.fromAssignedId),
-    index('reassignments_to_assigned_id_idx').on(table.toAssignedId),
+    uniqueIndex('items_holder_slot_unique')
+      .on(table.holderId, table.slot)
+      .where(sql`${table.slot} is not null`),
   ]
 );
 
@@ -189,8 +176,6 @@ export const schema = {
   clans,
   characters,
   items,
-  transfers,
-  reassignments,
   itemEvents,
 };
 
@@ -202,8 +187,6 @@ export const relations = defineRelations(schema, (r) => ({
   users: {
     characters: r.many.characters(),
     ownedItems: r.many.items(),
-    transfers: r.many.transfers(),
-    reassignments: r.many.reassignments(),
     itemEventsChangedBy: r.many.itemEvents({
       from: r.users.id,
       to: r.itemEvents.changedByUserId,
@@ -243,26 +226,6 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.characters.id,
       to: r.items.holderId,
       alias: 'heldItems',
-    }),
-    transfersFrom: r.many.transfers({
-      from: r.characters.id,
-      to: r.transfers.fromHolderId,
-      alias: 'transferFrom',
-    }),
-    transfersTo: r.many.transfers({
-      from: r.characters.id,
-      to: r.transfers.toHolderId,
-      alias: 'transferTo',
-    }),
-    reassignFrom: r.many.reassignments({
-      from: r.characters.id,
-      to: r.reassignments.fromAssignedId,
-      alias: 'reassignFrom',
-    }),
-    reassignTo: r.many.reassignments({
-      from: r.characters.id,
-      to: r.reassignments.toAssignedId,
-      alias: 'reassignTo',
     }),
     itemEventsFromAssigned: r.many.itemEvents({
       from: r.characters.id,
@@ -304,53 +267,7 @@ export const relations = defineRelations(schema, (r) => ({
       to: r.characters.id,
       alias: 'heldItems',
     }),
-    transfers: r.many.transfers(),
-    reassignments: r.many.reassignments(),
     itemEvents: r.many.itemEvents(),
-  },
-  transfers: {
-    item: r.one.items({
-      from: r.transfers.itemId,
-      to: r.items.id,
-      optional: false,
-    }),
-    fromHolder: r.one.characters({
-      from: r.transfers.fromHolderId,
-      to: r.characters.id,
-      alias: 'transferFrom',
-    }),
-    toHolder: r.one.characters({
-      from: r.transfers.toHolderId,
-      to: r.characters.id,
-      alias: 'transferTo',
-    }),
-    changedByUser: r.one.users({
-      from: r.transfers.changedByUserId,
-      to: r.users.id,
-      optional: false,
-    }),
-  },
-  reassignments: {
-    item: r.one.items({
-      from: r.reassignments.itemId,
-      to: r.items.id,
-      optional: false,
-    }),
-    fromAssigned: r.one.characters({
-      from: r.reassignments.fromAssignedId,
-      to: r.characters.id,
-      alias: 'reassignFrom',
-    }),
-    toAssigned: r.one.characters({
-      from: r.reassignments.toAssignedId,
-      to: r.characters.id,
-      alias: 'reassignTo',
-    }),
-    changedByUser: r.one.users({
-      from: r.reassignments.changedByUserId,
-      to: r.users.id,
-      optional: false,
-    }),
   },
   itemEvents: {
     item: r.one.items({
@@ -411,12 +328,6 @@ export type NewCharacter = typeof characters.$inferInsert;
 
 export type Item = typeof items.$inferSelect;
 export type NewItem = typeof items.$inferInsert;
-
-export type Transfer = typeof transfers.$inferSelect;
-export type NewTransfer = typeof transfers.$inferInsert;
-
-export type Reassignment = typeof reassignments.$inferSelect;
-export type NewReassignment = typeof reassignments.$inferInsert;
 
 export type ItemEvent = typeof itemEvents.$inferSelect;
 export type NewItemEvent = typeof itemEvents.$inferInsert;

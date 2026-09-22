@@ -1,6 +1,6 @@
 import { ItemWithRelations } from '@/app/actions/items';
 import { MenuAction } from './context-menu';
-import { CharacterWithRelations, getCharacters } from '@/app/actions/characters';
+import { CharacterWithRelations } from '@/app/actions/characters';
 
 export type ItemType = NonNullable<CharacterWithRelations['assignedItems']>[0];
 
@@ -27,19 +27,14 @@ export type itemVariant = 'assigned_in_place' | 'assigned_missing' | 'held_forei
 export interface CharacterItemRowProps {
   item: ItemType;
   variant: itemVariant;
+  actions: MenuAction[];
 }
 
-export type CharacterItem = NonNullable<
-  Awaited<ReturnType<typeof getCharacters>>[number]['assignedItems']
->[0];
+export type CharacterItem = NonNullable<CharacterWithRelations['assignedItems']>[number];
+
+export type ItemVariant = 'assigned_in_place' | 'assigned_missing' | 'held_foreign';
 
 export type ItemGroup = {
-  item: ItemWithRelations;
-  type: 'assigned_in_place' | 'assigned_missing' | 'held_foreign';
-};
-
-export const typeIcon: Record<string, string> = {
-  Weapon: '⚔️',
-  Armor: '🛡️',
-  Accessory: '💍',
+  item: CharacterItem;
+  type: ItemVariant;
 };

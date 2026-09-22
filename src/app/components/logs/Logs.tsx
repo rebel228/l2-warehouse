@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useLogs } from '@/lib/hooks/useLogs';
 import { LogEntry } from '@/lib/types/logs';
 import { useState } from 'react';
@@ -12,6 +13,7 @@ import {
   PaginationLink,
   PaginationNext,
 } from '../ui/pagination';
+import { typeIcon } from '@/lib/constants';
 
 export default function Logs() {
   const [page, setPage] = useState(1);
@@ -93,8 +95,21 @@ export default function Logs() {
                   })}
                 </td>
                 <td className="px-4 py-2 font-medium">
-                  {log.snapshot.name}
-                  {log.snapshot.enchantLevel !== 0 && ` +${log.snapshot.enchantLevel}`}
+                  <div className="flex gap-2">
+                    {log.snapshot.imageUrl ? (
+                      <Image
+                        src={log.snapshot.imageUrl}
+                        alt={log.snapshot.name}
+                        width={32}
+                        height={32}
+                        className="h-8 w-8 shrink-0 object-contain"
+                      />
+                    ) : (
+                      <span className="mr-1 shrink-0">{typeIcon[log.snapshot.type] || '📦'}</span>
+                    )}
+                    {log.snapshot.name}
+                    {log.snapshot.enchantLevel !== 0 && ` +${log.snapshot.enchantLevel}`}
+                  </div>
                 </td>
                 <td className="px-4 py-2 text-sm">{getActionText(log)}</td>
                 <td className="px-4 py-2 text-sm">{'Unknown'}</td>

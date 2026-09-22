@@ -26,7 +26,7 @@ export default function CharactersTable({ initialData }: CharacterTableProps) {
   };
 
   if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error loading items</div>;
+  if (error) return <div>Error loading characters</div>;
   return (
     <div className="w-full">
       <h1 className="text-2xl font-bold mb-4">Characters</h1>
