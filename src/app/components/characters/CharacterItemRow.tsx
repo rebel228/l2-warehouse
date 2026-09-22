@@ -50,8 +50,8 @@ export default function CharacterItemRow({ item, variant, actions }: CharacterIt
             <Image
               src={item.imageUrl}
               alt={item.name}
-              width={16}
-              height={16}
+              width={24}
+              height={24}
               className="shrink-0 object-contain"
             />
           ) : (
