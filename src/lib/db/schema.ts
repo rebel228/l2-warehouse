@@ -102,7 +102,6 @@ export const items = snakeCase.table(
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     name: varchar({ length: 255 }).notNull(),
     type: varchar({ length: 255 }).notNull(),
-    weaponType: varchar({ length: 50 }),
     bodypart: varchar({ length: 50 }),
     grade: itemGrade().default('D').notNull(),
     enchantLevel: integer().default(0).notNull(),

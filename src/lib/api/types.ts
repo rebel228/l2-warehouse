@@ -37,6 +37,5 @@ export interface L2ItemDetail {
   price: number;
   category: {
     bodypart?: string;
-    weaponType?: string;
   };
 }

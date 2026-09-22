@@ -44,7 +44,6 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
   const [type, setType] = useState(itemToEdit?.type ?? '');
   const [enchant, setEnchant] = useState(String(itemToEdit?.enchantLevel ?? 0));
   const [itemBodypart, setItemBodypart] = useState<string | null>(null);
-  const [itemWeaponType, setItemWeaponType] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState(itemToEdit?.ownerUser?.username ?? '');
   const [userList, setUserList] = useState<{ id: number; username: string; email: string }[]>([]);
@@ -77,7 +76,6 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
     setType('Weapon');
     setEnchant('0');
     setItemBodypart(null);
-    setItemWeaponType(null);
     setSearchTerm('');
     setSelectedOwnerId('');
     setUserList([]);
@@ -165,7 +163,6 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
 
     setSelectedItem(null);
     setItemBodypart(null);
-    setItemWeaponType(null);
     setItemSearchTerm(value);
     handleItemSearch(value);
   };
@@ -183,7 +180,6 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
     const details = await getL2Item(item.id);
 
     setItemBodypart(details.category.bodypart ?? null);
-    setItemWeaponType(details.category.weaponType ?? null);
   };
 
   const handleHolderSearch = useDebouncedCallback(async (value: string) => {
@@ -239,7 +235,6 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
     }
 
     formData.append('bodypart', itemBodypart ?? '');
-    formData.append('weaponType', itemWeaponType ?? '');
 
     if (selectedOwnerId) {
       formData.append('ownerUserId', selectedOwnerId);

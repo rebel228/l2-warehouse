@@ -23,7 +23,6 @@ export async function addItem(formData: FormData): Promise<ActionResult<ItemFiel
     type: formData.get('type'),
     enchant: formData.get('enchant'),
     bodypart: formData.get('bodypart') || null,
-    weaponType: formData.get('weaponType') || null,
     imageUrl: formData.get('imageUrl'),
     ownerUserId: formData.get('ownerUserId') ? Number(formData.get('ownerUserId')) : null,
     assignedId: formData.get('assignedId') ? Number(formData.get('assignedId')) : null,
@@ -38,18 +37,8 @@ export async function addItem(formData: FormData): Promise<ActionResult<ItemFiel
   }
 
   try {
-    const {
-      name,
-      grade,
-      type,
-      enchant,
-      bodypart,
-      weaponType,
-      imageUrl,
-      ownerUserId,
-      assignedId,
-      holderId,
-    } = validatedFields.data;
+    const { name, grade, type, enchant, bodypart, imageUrl, ownerUserId, assignedId, holderId } =
+      validatedFields.data;
     let ownerName: string | null = null;
     let assignedName: string | null = null;
     let holderName: string | null = null;
@@ -116,7 +105,6 @@ export async function addItem(formData: FormData): Promise<ActionResult<ItemFiel
           type,
           enchantLevel: enchant,
           bodypart,
-          weaponType,
           imageUrl,
           ownerUserId,
           assignedId,
@@ -225,7 +213,6 @@ export async function updateItem(
     type: formData.get('type'),
     enchant: formData.get('enchant'),
     bodypart: formData.get('bodypart') || null,
-    weaponType: formData.get('weaponType') || null,
     imageUrl: formData.get('imageUrl'),
     ownerUserId: formData.get('ownerUserId') ? Number(formData.get('ownerUserId')) : null,
     assignedId: formData.get('assignedId') ? Number(formData.get('assignedId')) : null,
@@ -245,26 +232,15 @@ export async function updateItem(
     if (!currentItem.length) return { success: false, message: 'Item not found.' };
     const item = currentItem[0];
 
-    const {
-      name,
-      grade,
-      type,
-      enchant,
-      bodypart,
-      weaponType,
-      imageUrl,
-      ownerUserId,
-      assignedId,
-      holderId,
-    } = validatedFields.data;
+    const { name, grade, type, enchant, bodypart, imageUrl, ownerUserId, assignedId, holderId } =
+      validatedFields.data;
 
     const oldOwnerUserId = currentItem[0].ownerUserId;
     const oldAssignedId = currentItem[0].assignedId;
     const oldHolderId = currentItem[0].holderId;
 
     const oldBodypart = item.bodypart;
-    const oldWeaponType = item.weaponType;
-    const equipmentChanged = oldBodypart !== bodypart || oldWeaponType !== weaponType;
+    const equipmentChanged = oldBodypart !== bodypart;
     const nextSlot = equipmentChanged ? null : item.slot;
 
     const ownerChanged = oldOwnerUserId !== ownerUserId;
@@ -342,7 +318,6 @@ export async function updateItem(
           type,
           enchantLevel: enchant,
           bodypart,
-          weaponType,
           slot: nextSlot,
           imageUrl,
           ownerUserId,
