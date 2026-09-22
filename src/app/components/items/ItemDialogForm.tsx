@@ -27,7 +27,7 @@ import { useAddItem, useUpdateItem } from '@/lib/hooks/useItems';
 import { ItemFieldErrors } from '@/lib/types/mutations-results';
 import { toast } from 'sonner';
 import { GRADES, ITEM_TYPES } from '@/lib/constants';
-import { searchL2Items } from '@/lib/api/client';
+import { getL2Item, searchL2Items } from '@/lib/api/client';
 import { L2ItemSearchResult } from '@/lib/api/types';
 
 export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFormProps) {
@@ -43,6 +43,8 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
   const [grade, setGrade] = useState(itemToEdit?.grade ?? '');
   const [type, setType] = useState(itemToEdit?.type ?? '');
   const [enchant, setEnchant] = useState(String(itemToEdit?.enchantLevel ?? 0));
+  const [itemBodypart, setItemBodypart] = useState<string | null>(null);
+  const [itemWeaponType, setItemWeaponType] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState(itemToEdit?.ownerUser?.username ?? '');
   const [userList, setUserList] = useState<{ id: number; username: string; email: string }[]>([]);
@@ -74,6 +76,8 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
     setGrade('D');
     setType('Weapon');
     setEnchant('0');
+    setItemBodypart(null);
+    setItemWeaponType(null);
     setSearchTerm('');
     setSelectedOwnerId('');
     setUserList([]);
@@ -160,11 +164,13 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
     const value = e.target.value;
 
     setSelectedItem(null);
+    setItemBodypart(null);
+    setItemWeaponType(null);
     setItemSearchTerm(value);
     handleItemSearch(value);
   };
 
-  const handleItemSelect = (item: L2ItemSearchResult) => {
+  const handleItemSelect = async (item: L2ItemSearchResult) => {
     handleItemSearch.cancel();
 
     setSelectedItem(item);
@@ -174,6 +180,10 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
     setType(item.type === 'weapon' ? 'Weapon' : 'Armor');
 
     setItemList([]);
+    const details = await getL2Item(item.id);
+
+    setItemBodypart(details.category.bodypart ?? null);
+    setItemWeaponType(details.category.weaponType ?? null);
   };
 
   const handleHolderSearch = useDebouncedCallback(async (value: string) => {
@@ -227,6 +237,9 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
     if (selectedItem) {
       formData.append('imageUrl', `https://l2api.dev/icons/${selectedItem.iconFile}`);
     }
+
+    formData.append('bodypart', itemBodypart ?? '');
+    formData.append('weaponType', itemWeaponType ?? '');
 
     if (selectedOwnerId) {
       formData.append('ownerUserId', selectedOwnerId);

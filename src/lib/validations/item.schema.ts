@@ -6,6 +6,8 @@ export const addItemSchema = z.object({
   grade: z.enum(GRADES, 'Select a grade'),
   type: z.enum(ITEM_TYPES, 'Select a type'),
   enchant: z.coerce.number().min(0, { message: 'Min 0' }).max(25, { message: 'Max 25' }).default(0),
+  bodypart: z.string().nullable().optional(),
+  weaponType: z.string().nullable().optional(),
   ownerUserId: z.coerce.number().positive().nullable().optional(),
   assignedId: z.coerce.number().positive().nullable().optional(),
   holderId: z.coerce.number().positive().nullable().optional(),
