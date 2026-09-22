@@ -37,7 +37,7 @@ const EQUIPMENT_SLOTS: EquipmentSlot[] = [
   { key: 'earring-1', label: 'Earring', rowClass: 'row-start-2', colClass: 'col-start-4' },
   { key: 'earring-2', label: 'Earring', rowClass: 'row-start-2', colClass: 'col-start-5' },
   { key: 'gloves', label: 'Gloves', rowClass: 'row-start-3', colClass: 'col-start-1' },
-  { key: 'pants', label: 'Pants', rowClass: 'row-start-3', colClass: 'col-start-2' },
+  { key: 'legs', label: 'Legs', rowClass: 'row-start-3', colClass: 'col-start-2' },
   { key: 'boots', label: 'Boots', rowClass: 'row-start-3', colClass: 'col-start-3' },
   { key: 'ring-1', label: 'Ring', rowClass: 'row-start-3', colClass: 'col-start-4' },
   { key: 'ring-2', label: 'Ring', rowClass: 'row-start-3', colClass: 'col-start-5' },
