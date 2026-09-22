@@ -27,6 +27,7 @@ export type itemVariant = 'assigned_in_place' | 'assigned_missing' | 'held_forei
 export interface CharacterItemRowProps {
   item: ItemType;
   variant: itemVariant;
+  actions: MenuAction[];
 }
 
 export type CharacterItem = NonNullable<CharacterWithRelations['assignedItems']>[number];

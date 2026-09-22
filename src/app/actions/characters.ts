@@ -114,29 +114,53 @@ export async function getCharacters() {
         },
       },
       assignedItems: {
-        columns: {
-          id: true,
-          name: true,
-          type: true,
-          bodypart: true,
-          slot: true,
-          grade: true,
-          enchantLevel: true,
-          imageUrl: true,
-          status: true,
+        with: {
+          ownerUser: {
+            columns: {
+              id: true,
+              username: true,
+              email: true,
+            },
+          },
+          assignedChar: {
+            columns: {
+              id: true,
+              name: true,
+              class: true,
+            },
+          },
+          holderChar: {
+            columns: {
+              id: true,
+              name: true,
+              class: true,
+            },
+          },
         },
       },
       heldItems: {
-        columns: {
-          id: true,
-          name: true,
-          type: true,
-          bodypart: true,
-          slot: true,
-          grade: true,
-          enchantLevel: true,
-          imageUrl: true,
-          status: true,
+        with: {
+          ownerUser: {
+            columns: {
+              id: true,
+              username: true,
+              email: true,
+            },
+          },
+          assignedChar: {
+            columns: {
+              id: true,
+              name: true,
+              class: true,
+            },
+          },
+          holderChar: {
+            columns: {
+              id: true,
+              name: true,
+              class: true,
+            },
+          },
         },
       },
     },
