@@ -39,11 +39,10 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
   const [itemList, setItemList] = useState<L2ItemSearchResult[]>([]);
   const [selectedItem, setSelectedItem] = useState<L2ItemSearchResult | null>(null);
 
-  const [name, setName] = useState(itemToEdit?.name ?? '');
   const [grade, setGrade] = useState(itemToEdit?.grade ?? '');
   const [type, setType] = useState(itemToEdit?.type ?? '');
   const [enchant, setEnchant] = useState(String(itemToEdit?.enchantLevel ?? 0));
-  const [itemBodypart, setItemBodypart] = useState<string | null>(null);
+  const [itemBodypart, setItemBodypart] = useState<string | null>(itemToEdit?.bodypart ?? null);
 
   const [searchTerm, setSearchTerm] = useState(itemToEdit?.ownerUser?.username ?? '');
   const [userList, setUserList] = useState<{ id: number; username: string; email: string }[]>([]);
@@ -71,7 +70,6 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
   const updateMutation = useUpdateItem();
 
   const resetForm = () => {
-    setName('');
     setGrade('D');
     setType('Weapon');
     setEnchant('0');
@@ -172,7 +170,6 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
 
     setSelectedItem(item);
     setItemSearchTerm(item.name);
-    setName(item.name);
     setGrade(item.grade.toUpperCase());
     setType(item.type === 'weapon' ? 'Weapon' : 'Armor');
 
@@ -232,9 +229,12 @@ export function ItemDialogForm({ open, onOpenChange, itemToEdit }: ItemDialogFor
 
     if (selectedItem) {
       formData.append('imageUrl', `https://l2api.dev/icons/${selectedItem.iconFile}`);
-    }
 
-    formData.append('bodypart', itemBodypart ?? '');
+      formData.append('bodypart', itemBodypart ?? '');
+    } else if (itemToEdit) {
+      formData.append('imageUrl', itemToEdit.imageUrl ?? '');
+      formData.append('bodypart', itemToEdit.bodypart ?? '');
+    }
 
     if (selectedOwnerId) {
       formData.append('ownerUserId', selectedOwnerId);
