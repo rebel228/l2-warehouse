@@ -733,11 +733,16 @@ export async function equipItem(itemId: number, characterId: number): Promise<Ac
 
       const occupiedSlots = getOccupiedSlots(item, slot);
       const conflicts = equippedItems.filter((equippedItem) => {
-        if (equippedItem.slot) return occupiedSlots.includes(equippedItem.slot);
+        if (!equippedItem.slot) {
+          return false;
+        }
+        const equippedOccupiedSlots = getOccupiedSlots(equippedItem, equippedItem.slot);
+
+        return equippedOccupiedSlots.some((occupiedSlot) => occupiedSlots.includes(occupiedSlot));
       });
 
-      if (conflicts) {
-        conflicts.forEach(async (equippedItem) => {
+      if (conflicts.length > 0) {
+        for (const equippedItem of conflicts) {
           await tx
             .update(items)
             .set({
@@ -745,7 +750,7 @@ export async function equipItem(itemId: number, characterId: number): Promise<Ac
               updatedAt: new Date(),
             })
             .where(eq(items.id, equippedItem.id));
-        });
+        }
       }
 
       await tx
