@@ -1,5 +1,14 @@
-import { defineRelations } from 'drizzle-orm';
-import { index, integer, jsonb, pgEnum, snakeCase, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { defineRelations, sql } from 'drizzle-orm';
+import {
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  snakeCase,
+  timestamp,
+  uniqueIndex,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { GRADES } from '../constants';
 
 // ==============================================
@@ -15,6 +24,20 @@ export const itemEventType = pgEnum('itemEventType', [
   'owner_change',
   'reassignment',
   'transfer',
+]);
+export const equipmentSlot = pgEnum('equipmentSlot', [
+  'weapon',
+  'shield',
+  'helmet',
+  'chest',
+  'legs',
+  'gloves',
+  'boots',
+  'necklace',
+  'earring_left',
+  'earring_right',
+  'ring_left',
+  'ring_right',
 ]);
 export type ItemEventSnapshot = {
   name: string;
@@ -79,6 +102,8 @@ export const items = snakeCase.table(
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     name: varchar({ length: 255 }).notNull(),
     type: varchar({ length: 255 }).notNull(),
+    weaponType: varchar({ length: 50 }),
+    bodypart: varchar({ length: 50 }),
     grade: itemGrade().default('D').notNull(),
     enchantLevel: integer().default(0).notNull(),
     imageUrl: varchar({ length: 500 }),
@@ -91,6 +116,8 @@ export const items = snakeCase.table(
 
     assignedId: integer().references(() => characters.id),
     holderId: integer().references(() => characters.id),
+
+    slot: equipmentSlot(),
   },
   (table) => [
     index('items_owner_user_id_idx').on(table.ownerUserId),
@@ -98,6 +125,9 @@ export const items = snakeCase.table(
     index('items_assigned_id_idx').on(table.assignedId),
     index('items_holder_id_idx').on(table.holderId),
     index('items_status_idx').on(table.status),
+    uniqueIndex('items_holder_slot_unique')
+      .on(table.holderId, table.slot)
+      .where(sql`${table.slot} is not null`),
   ]
 );
 
