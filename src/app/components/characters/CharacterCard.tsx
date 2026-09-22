@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { CharacterCardProps } from '@/lib/types/dashboard';
 import { Edit, Trash2 } from 'lucide-react';
 import {
@@ -34,13 +35,13 @@ const EQUIPMENT_SLOTS: EquipmentSlot[] = [
   { key: 'weapon', label: 'Weapon', rowClass: 'row-start-2', colClass: 'col-start-1' },
   { key: 'chest', label: 'Chest', rowClass: 'row-start-2', colClass: 'col-start-2' },
   { key: 'offhand', label: 'Offhand', rowClass: 'row-start-2', colClass: 'col-start-3' },
-  { key: 'earring-1', label: 'Earring', rowClass: 'row-start-2', colClass: 'col-start-4' },
-  { key: 'earring-2', label: 'Earring', rowClass: 'row-start-2', colClass: 'col-start-5' },
+  { key: 'earring_left', label: 'Earring', rowClass: 'row-start-2', colClass: 'col-start-4' },
+  { key: 'earring_righ', label: 'Earring', rowClass: 'row-start-2', colClass: 'col-start-5' },
   { key: 'gloves', label: 'Gloves', rowClass: 'row-start-3', colClass: 'col-start-1' },
   { key: 'legs', label: 'Legs', rowClass: 'row-start-3', colClass: 'col-start-2' },
   { key: 'boots', label: 'Boots', rowClass: 'row-start-3', colClass: 'col-start-3' },
-  { key: 'ring-1', label: 'Ring', rowClass: 'row-start-3', colClass: 'col-start-4' },
-  { key: 'ring-2', label: 'Ring', rowClass: 'row-start-3', colClass: 'col-start-5' },
+  { key: 'ring_left', label: 'Ring', rowClass: 'row-start-3', colClass: 'col-start-4' },
+  { key: 'ring_right', label: 'Ring', rowClass: 'row-start-3', colClass: 'col-start-5' },
 ];
 
 export default function CharacterCard({ character, onEdit }: CharacterCardProps) {
@@ -154,6 +155,39 @@ export default function CharacterCard({ character, onEdit }: CharacterCardProps)
     console.log('unequip', item);
   };
 
+  const getEquipmentItem = (slotKey: string, items: typeof character.heldItems) => {
+    const item = items.find((item) => item.slot === slotKey);
+
+    if (item) {
+      return {
+        item,
+        dimmed: false,
+      };
+    }
+
+    const twoHandedWeapon = items.find(
+      (item) => item.slot === 'weapon' && item.bodypart === 'Two-handed'
+    );
+
+    if (twoHandedWeapon && slotKey === 'offhand') {
+      return {
+        item: twoHandedWeapon,
+        dimmed: true,
+      };
+    }
+
+    const fullArmor = items.find((item) => item.slot === 'chest' && item.bodypart === 'Full Armor');
+
+    if (fullArmor && slotKey === 'legs') {
+      return {
+        item: fullArmor,
+        dimmed: true,
+      };
+    }
+
+    return null;
+  };
+
   return (
     <div className="w-80 flex-shrink-0">
       <Accordion className="w-full bg-card border shadow-sm hover:shadow-md transition-shadow">
@@ -202,16 +236,39 @@ export default function CharacterCard({ character, onEdit }: CharacterCardProps)
                 Equipment
               </h4>
               <div className="grid grid-cols-5 grid-rows-3 gap-1.5 rounded-md bg-zinc-900/40 p-1.5">
-                {EQUIPMENT_SLOTS.map((slot) => (
-                  <div
-                    key={slot.key}
-                    className={`${slot.rowClass} ${slot.colClass} flex aspect-square items-center justify-center rounded-md border border-zinc-700/70 bg-zinc-900/70`}
-                  >
-                    <span className="text-center text-[8px] font-medium uppercase leading-tight tracking-wide text-zinc-500">
-                      {slot.label}
-                    </span>
-                  </div>
-                ))}
+                {EQUIPMENT_SLOTS.map((slot) => {
+                  const equipment = getEquipmentItem(slot.key, character.heldItems);
+                  return (
+                    <div
+                      key={slot.key}
+                      className={`${slot.rowClass} ${slot.colClass} flex aspect-square items-center justify-center rounded-md border border-zinc-700/70 bg-zinc-900/70`}
+                    >
+                      {equipment ? (
+                        equipment.item.imageUrl ? (
+                          <Image
+                            src={equipment.item.imageUrl}
+                            alt={equipment.item.name}
+                            width={40}
+                            height={40}
+                            className={`h-full w-full object-contain p-1 ${
+                              equipment.dimmed ? 'opacity-40' : ''
+                            }`}
+                          />
+                        ) : (
+                          <span className={`text-xs ${equipment.dimmed ? 'opacity-40' : ''}`}>
+                            {equipment.item.name}
+                          </span>
+                        )
+                      ) : (
+                        <div className="flex aspect-square w-full items-center justify-center rounded-md border border-zinc-700/70 bg-zinc-900/70">
+                          <span className="text-center text-[8px] font-medium uppercase leading-tight tracking-wide text-zinc-500">
+                            {slot.label}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

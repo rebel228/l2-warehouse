@@ -9,13 +9,18 @@ export function buildItemList(character: CharacterWithRelations): ItemGroup[] {
   const assigned = character.assignedItems ?? [];
   const held = character.heldItems ?? [];
 
-  const assignedGroups: ItemGroup[] = assigned.map((item) => {
-    const isInPlace = held.some((h) => h.id === item.id);
-    return {
-      item,
-      type: isInPlace ? 'assigned_in_place' : 'assigned_missing',
-    };
-  });
+  const assignedGroups: ItemGroup[] = assigned
+    .filter((item) => {
+      const heldItem = held.find((h) => h.id === item.id);
+      return !heldItem || heldItem.slot === null;
+    })
+    .map((item) => {
+      const isInPlace = held.some((h) => h.id === item.id);
+      return {
+        item,
+        type: isInPlace ? 'assigned_in_place' : 'assigned_missing',
+      };
+    });
 
   const heldForeignGroups: ItemGroup[] = held
     .filter((item) => !assigned.some((a) => a.id === item.id))
