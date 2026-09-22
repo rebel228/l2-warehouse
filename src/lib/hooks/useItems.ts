@@ -27,9 +27,9 @@ export function useAddItem() {
 
     onSuccess: (data) => {
       if (data.success) {
-        queryClient.invalidateQueries({
-          queryKey: ['items', 'logs'],
-        });
+        queryClient.invalidateQueries({ queryKey: ['logs'] });
+        queryClient.invalidateQueries({ queryKey: ['items'] });
+        queryClient.invalidateQueries({ queryKey: ['characters'] });
       }
     },
   });
@@ -41,9 +41,9 @@ export function useDeleteItem() {
     mutationFn: deleteItem,
     onSuccess: (data) => {
       if (data.success) {
-        queryClient.invalidateQueries({
-          queryKey: ['items', 'logs'],
-        });
+        queryClient.invalidateQueries({ queryKey: ['logs'] });
+        queryClient.invalidateQueries({ queryKey: ['items'] });
+        queryClient.invalidateQueries({ queryKey: ['characters'] });
       }
     },
   });
@@ -55,7 +55,9 @@ export function useUpdateItem() {
     mutationFn: ({ id, formData }: { id: number; formData: FormData }) => updateItem(id, formData),
     onSuccess: (data) => {
       if (data.success) {
-        queryClient.invalidateQueries({ queryKey: ['items', 'logs'] });
+        queryClient.invalidateQueries({ queryKey: ['logs'] });
+        queryClient.invalidateQueries({ queryKey: ['items'] });
+        queryClient.invalidateQueries({ queryKey: ['characters'] });
       }
     },
   });
@@ -68,9 +70,8 @@ export function useUpdateItemOwner() {
       updateItemOwner(id, userId),
     onSuccess: (data) => {
       if (data.success) {
-        queryClient.invalidateQueries({
-          queryKey: ['items', 'logs'],
-        });
+        queryClient.invalidateQueries({ queryKey: ['logs'] });
+        queryClient.invalidateQueries({ queryKey: ['items'] });
       }
     },
   });
@@ -83,9 +84,9 @@ export function useUpdateItemAssigned() {
       updateItemAssigned(id, characterId),
     onSuccess: (data) => {
       if (data.success) {
-        queryClient.invalidateQueries({
-          queryKey: ['items', 'logs'],
-        });
+        queryClient.invalidateQueries({ queryKey: ['logs'] });
+        queryClient.invalidateQueries({ queryKey: ['items'] });
+        queryClient.invalidateQueries({ queryKey: ['characters'] });
       }
     },
   });
@@ -98,9 +99,9 @@ export function useUpdateItemHolder() {
       updateItemHolder(id, characterId),
     onSuccess: (data) => {
       if (data.success) {
-        queryClient.invalidateQueries({
-          queryKey: ['items', 'logs'],
-        });
+        queryClient.invalidateQueries({ queryKey: ['items'] });
+        queryClient.invalidateQueries({ queryKey: ['items'] });
+        queryClient.invalidateQueries({ queryKey: ['characters'] });
       }
     },
   });
