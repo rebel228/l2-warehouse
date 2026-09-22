@@ -3,6 +3,7 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import { ReactQueryProvider } from './providers/ReactQueryProvider';
+import { TooltipProvider } from './components/ui/tooltip';
 import { Toaster } from 'sonner';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
@@ -17,7 +18,9 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     <html lang="en" className={cn('h-full antialiased', 'font-sans', inter.variable)}>
       <body className="min-h-full flex flex-col">
         <Toaster />
-        <ReactQueryProvider>{children}</ReactQueryProvider>
+        <TooltipProvider delay={500}>
+          <ReactQueryProvider>{children}</ReactQueryProvider>
+        </TooltipProvider>
       </body>
     </html>
   );

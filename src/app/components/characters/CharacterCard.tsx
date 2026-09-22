@@ -22,6 +22,7 @@ import { ItemDialogForm } from '../items/ItemDialogForm';
 import { ItemActionDialog } from '../items/ItemActionDialog';
 import { toast } from 'sonner';
 import { ContextMenuWrapper } from '../shared/ContextMenu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
 type EquipmentSlot = {
   key: string;
@@ -256,29 +257,43 @@ export default function CharacterCard({ character, onEdit }: CharacterCardProps)
                 {EQUIPMENT_SLOTS.map((slot) => {
                   const equipment = getEquipmentItem(slot.key, character.heldItems);
                   const content = (
-                    <div>
+                    <Tooltip>
                       {equipment ? (
-                        equipment.item.imageUrl ? (
-                          <Image
-                            src={equipment.item.imageUrl}
-                            alt={equipment.item.name}
-                            width={40}
-                            height={40}
-                            className={`h-full w-full object-contain p-1 ${
-                              equipment.dimmed ? 'opacity-40' : ''
-                            }`}
-                          />
-                        ) : (
-                          <span className={`text-xs ${equipment.dimmed ? 'opacity-40' : ''}`}>
-                            {equipment.item.name}
-                          </span>
-                        )
+                        <TooltipTrigger>
+                          {equipment.item.imageUrl ? (
+                            <Image
+                              src={equipment.item.imageUrl}
+                              alt={equipment.item.name}
+                              width={40}
+                              height={40}
+                              className={`h-full w-full object-contain p-1 ${
+                                equipment.dimmed ? 'opacity-40' : ''
+                              }`}
+                            />
+                          ) : (
+                            <span className={`text-xs ${equipment.dimmed ? 'opacity-40' : ''}`}>
+                              {equipment.item.name}
+                            </span>
+                          )}
+                        </TooltipTrigger>
                       ) : (
                         <span className="text-center text-[8px] font-medium uppercase leading-tight tracking-wide text-zinc-500">
                           {slot.label}
                         </span>
                       )}
-                    </div>
+
+                      <TooltipContent>
+                        <div className="space-y-1">
+                          <div className="font-semibold">
+                            {equipment?.item.name}
+                            {equipment?.item.enchantLevel ? ` +${equipment.item.enchantLevel}` : ''}
+                          </div>
+                          <div>Owner: {equipment?.item.ownerUser?.username ?? '—'}</div>
+                          <div>Assigned: {equipment?.item.assignedChar?.name ?? '—'}</div>
+                          <div>Holder: {equipment?.item.holderChar?.name ?? '—'}</div>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
                   );
                   if (!equipment) {
                     return (
@@ -333,12 +348,20 @@ export default function CharacterCard({ character, onEdit }: CharacterCardProps)
                     );
 
                     return (
-                      <CharacterItemRow
-                        key={item.id}
-                        item={item}
-                        variant={type}
-                        actions={actions}
-                      />
+                      <Tooltip key={item.id}>
+                        <TooltipTrigger render={<div className="w-full" />}>
+                          <CharacterItemRow item={item} variant={type} actions={actions} />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="space-y-1">
+                            {item.name}
+                            {item.enchantLevel ? ` +${item.enchantLevel}` : ''}
+                            <div>Owner: {item.ownerUser?.username ?? '—'}</div>
+                            <div>Assigned: {item.assignedChar?.name ?? '—'}</div>
+                            <div>Holder: {item.holderChar?.name ?? '—'}</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
                     );
                   })}
                 </div>
