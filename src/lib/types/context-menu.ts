@@ -15,4 +15,5 @@ export interface ContextMenuWrapperProps {
   children: React.ReactNode;
   actions: MenuAction[];
   onOpenChange?: (open: boolean) => void;
+  className?: string;
 }

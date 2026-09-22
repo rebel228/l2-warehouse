@@ -1,40 +1,8 @@
 import Image from 'next/image';
 import { useState } from 'react';
 import { ContextMenuWrapper } from '../shared/ContextMenu';
-import { MenuAction } from '@/lib/types/context-menu';
-import { Users, RotateCcw, MoveRight, Edit, Trash2 } from 'lucide-react';
-import { CharacterItemRowProps, ItemType, itemVariant } from '@/lib/types/dashboard';
+import { CharacterItemRowProps, itemVariant } from '@/lib/types/dashboard';
 import { typeIcon } from '@/lib/constants';
-
-const itemActions = (item: ItemType): MenuAction[] => [
-  {
-    label: 'Change Owner',
-    icon: <Users className="h-4 w-4" />,
-    onClick: () => console.log('change owner', item),
-  },
-  {
-    label: 'Reassign',
-    icon: <RotateCcw className="h-4 w-4" />,
-    onClick: () => console.log('reassign', item),
-  },
-  {
-    label: 'Transfer',
-    icon: <MoveRight className="h-4 w-4" />,
-    onClick: () => console.log('transfer', item),
-  },
-  { type: 'separator' },
-  {
-    label: 'Edit',
-    icon: <Edit className="h-4 w-4" />,
-    onClick: () => console.log('edit', item),
-  },
-  {
-    label: 'Delete',
-    icon: <Trash2 className="h-4 w-4" />,
-    onClick: () => console.log('delete', item),
-    variant: 'destructive',
-  },
-];
 
 const itemStyles: Record<itemVariant, { default: string; selected: string; hover: string }> = {
   assigned_in_place: {
@@ -56,7 +24,7 @@ const itemStyles: Record<itemVariant, { default: string; selected: string; hover
   },
 };
 
-export default function CharacterItemRow({ item, variant }: CharacterItemRowProps) {
+export default function CharacterItemRow({ item, variant, actions }: CharacterItemRowProps) {
   const [isSelected, setIsSelected] = useState(false);
 
   const handleOpenChange = (open: boolean) => {
@@ -68,7 +36,7 @@ export default function CharacterItemRow({ item, variant }: CharacterItemRowProp
     'flex items-center gap-2 px-2 py-1 rounded cursor-context-menu text-sm transition-colors';
 
   return (
-    <ContextMenuWrapper actions={itemActions(item)} onOpenChange={handleOpenChange}>
+    <ContextMenuWrapper actions={actions} onOpenChange={handleOpenChange}>
       <div
         className={`
           ${baseClasses} ${styles.hover}

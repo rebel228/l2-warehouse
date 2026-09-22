@@ -27,3 +27,15 @@ export interface L2Item {
   material: string;
   iconFile: string;
 }
+
+export interface L2ItemDetail {
+  id: number;
+  name: string;
+  type: string;
+  grade: string;
+  weight: number;
+  price: number;
+  category: {
+    bodypart?: string;
+  };
+}
