@@ -21,6 +21,7 @@ import { ConfirmDialog } from '../shared/AlertDialog';
 import { ItemDialogForm } from '../items/ItemDialogForm';
 import { ItemActionDialog } from '../items/ItemActionDialog';
 import { toast } from 'sonner';
+import { ContextMenuWrapper } from '../shared/ContextMenu';
 
 type EquipmentSlot = {
   key: string;
@@ -47,6 +48,8 @@ const EQUIPMENT_SLOTS: EquipmentSlot[] = [
 export default function CharacterCard({ character, onEdit }: CharacterCardProps) {
   const itemList = buildItemList(character);
   const deleteMutation = useDeleteCharacter();
+
+  const [isEquipmentSelected, setIsEquipmentSelected] = useState(false);
 
   const deleteItemMutation = useDeleteItem();
   const equipItemMutation = useEquipItem();
@@ -155,6 +158,10 @@ export default function CharacterCard({ character, onEdit }: CharacterCardProps)
     console.log('unequip', item);
   };
 
+  const handleEquipmentOpenChange = (open: boolean) => {
+    if (!open) setIsEquipmentSelected(false);
+  };
+
   const getEquipmentItem = (slotKey: string, items: typeof character.heldItems) => {
     const item = items.find((item) => item.slot === slotKey);
 
@@ -238,11 +245,8 @@ export default function CharacterCard({ character, onEdit }: CharacterCardProps)
               <div className="grid grid-cols-5 grid-rows-3 gap-1.5 rounded-md bg-zinc-900/40 p-1.5">
                 {EQUIPMENT_SLOTS.map((slot) => {
                   const equipment = getEquipmentItem(slot.key, character.heldItems);
-                  return (
-                    <div
-                      key={slot.key}
-                      className={`${slot.rowClass} ${slot.colClass} flex aspect-square items-center justify-center rounded-md border border-zinc-700/70 bg-zinc-900/70`}
-                    >
+                  const content = (
+                    <div>
                       {equipment ? (
                         equipment.item.imageUrl ? (
                           <Image
@@ -260,13 +264,43 @@ export default function CharacterCard({ character, onEdit }: CharacterCardProps)
                           </span>
                         )
                       ) : (
-                        <div className="flex aspect-square w-full items-center justify-center rounded-md border border-zinc-700/70 bg-zinc-900/70">
-                          <span className="text-center text-[8px] font-medium uppercase leading-tight tracking-wide text-zinc-500">
-                            {slot.label}
-                          </span>
-                        </div>
+                        <span className="text-center text-[8px] font-medium uppercase leading-tight tracking-wide text-zinc-500">
+                          {slot.label}
+                        </span>
                       )}
                     </div>
+                  );
+                  if (!equipment) {
+                    return (
+                      <div
+                        key={slot.key}
+                        className={`${slot.rowClass} ${slot.colClass} flex aspect-square items-center justify-center rounded-md border border-zinc-700/70 bg-zinc-900/70`}
+                      >
+                        {content}
+                      </div>
+                    );
+                  }
+                  return (
+                    <ContextMenuWrapper
+                      key={slot.key}
+                      className={`${slot.rowClass} ${slot.colClass} flex aspect-square items-center justify-center rounded-md border border-zinc-700/70 bg-zinc-900/70`}
+                      actions={
+                        equipment
+                          ? buildCharacterItemMenu(
+                              equipment.item,
+                              character.id,
+                              handleItemDelete,
+                              handleItemEdit,
+                              handleItemAction,
+                              handleEquip,
+                              handleUnequip
+                            )
+                          : []
+                      }
+                      onOpenChange={handleEquipmentOpenChange}
+                    >
+                      {content}
+                    </ContextMenuWrapper>
                   );
                 })}
               </div>
